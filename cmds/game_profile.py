@@ -38,11 +38,19 @@ def is_matched_restrict_role(author:Context.author, match_role="兔兔帝國"):
 def parse_command_after(message:str, command_name:str):
     if type(message) is not str:
         return ""
+    arr = message.split(" ", 2)
+    if len(arr) <= 1:
+        return ""
+    else:
+        return arr[1]
+    """
     prefix = jdata.get("Prefix","")[0]
     start_pos = len(prefix) + len(command_name)
     if len(message) <= start_pos:
         return ""
     return message[start_pos:].lstrip()
+    """
+    
 
 
 async def check_rol_valid(ctx:Context, match_role="兔兔帝國"):
