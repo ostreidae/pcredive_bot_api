@@ -63,7 +63,13 @@ class BackendMaintain(Cog_Extension):
     
     @commands.command()
     async def update(self, ctx:Context):
-        pass
+        if ctx.author.id != maintainer_id:
+            await ctx.send("該使用者無法使用這項指令") 
+            return
+        import requests, zipfile, io
+        r = requests.get(download_url)
+        z = zipfile.ZipFile(io.BytesIO(r.content))
+        z.extractall("./")
     
     @commands.command()
     async def restart(self, ctx:Context):
