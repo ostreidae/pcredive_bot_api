@@ -16,6 +16,7 @@ from threading import Thread
 
 import time
 import attr
+from sqlalchemy import true
 from .utils import decryptxml
 
 def get_headers():
@@ -231,7 +232,7 @@ class PcrClientInfo:
         
     
 class PcrClientApi:
-    def __init__(self, root_dir='', logger=None):
+    def __init__(self, root_dir='', logger=None, configuration_dict:dict=dict()):
         self.logger = get_logger(logger)
         self.api = get_pcr_client(root_dir)
         self.api.login()
@@ -240,7 +241,16 @@ class PcrClientApi:
         #self.schedule = PcrClientMaintainSchedule(self, thread_uploader, self.logger)
         
         self.cache_state = dict()
-        self.bind_id = dict() # TODO: from model-store json, current in memory only
+        self.config_dict = configuration_dict
+        target_dict = configuration_dict.get("binding_id", dict())
+        for key, val in dict(target_dict).items():
+            target_dict[str(key)] = int(val)
+        configuration_dict["binding_id"] = target_dict
+        self.binding_id_dict =  target_dict
+        
+    def dump_setting(self):
+        with open("configuration.json", "w") as f:
+            json.dump(self.config_dict, f, sort_keys=true, indent=4)
         
     def query_target_user_game_id(self, game_id:int) -> PcrClientInfo:
         current_ts = (time.time()*1e3)
@@ -264,13 +274,17 @@ class PcrClientApi:
         return res
         
     def query_target_user_game_id_fromdc(self, dc_id:int) -> PcrClientInfo:
-        game_id = self.bind_id.get(dc_id, None)
+        game_id = self.binding_id_dict.get(dc_id, None)
         if game_id is None:
             return
         return self.query_target_user_game_id(game_id)
         
     def bind_user_id(self, dc_id, game_id):
-        self.bind_id[dc_id] = game_id
+        dc_id = str(dc_id)
+        if self.binding_id_dict.get(dc_id, 0) == game_id:
+            return
+        self.binding_id_dict[dc_id] = game_id
+        self.dump_setting()
     
 
 #TODO: maintain user rank history

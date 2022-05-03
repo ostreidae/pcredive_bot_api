@@ -12,6 +12,12 @@ import datetime
 with open('setting.json', 'r', encoding='utf8') as jfile:
 	jdata = json.load(jfile)
 
+if os.path.exists("configuration.json"):
+    with open("configuration.json", "r", encoding="utf8") as config_file:
+        config = json.load(config_file)
+else:
+    config = {}
+
 class Cog_Extension(commands.Cog):
     """用於Cog繼承基本屬性"""
     def __init__(self, bot):
@@ -99,14 +105,15 @@ def generate_embed_result(res:PcrClientInfo):
 class PcReDiveGameProfile(Cog_Extension):
     def __init__(self, bot):
         super().__init__(bot)
-        self.api = PcrClientApi()
+        self.config_dict = config
+        self.api = PcrClientApi(configuration_dict=self.config_dict)
     
     @commands.command()
     async def me(self, ctx:Context):
         '''[查詢自己的Id] --- me'''
         if (await check_rol_valid(ctx, match_role="兔兔帝國")) == False:
             return
-        game_id = self.api.bind_id.get(ctx.author.id, None)
+        game_id = self.api.binding_id_dict.get(str(ctx.author.id), None)
         if game_id is None:
             await ctx.send("此discord帳號尚未綁定遊戲id")
             return

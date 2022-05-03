@@ -18,7 +18,7 @@ from core.errors import Errors
     
 url = "https://raw.githubusercontent.com/ostreidae/pcredive_bot_api/main/version"
 download_url = "https://github.com/ostreidae/pcredive_bot_api/archive/refs/heads/main.zip"
-maintainer_id = 764383189439348777
+maintainer_id = [764383189439348777, 971077292384219226]
 
 with open('setting.json', 'r', encoding='utf8') as jfile:
 	jdata = json.load(jfile)
@@ -63,7 +63,7 @@ class BackendMaintain(Cog_Extension):
     
     @commands.command()
     async def update(self, ctx:Context):
-        if ctx.author.id != maintainer_id:
+        if ctx.author.id in maintainer_id:
             await ctx.send("該使用者無法使用這項指令") 
             return
         import requests, zipfile, io, shutil
@@ -91,7 +91,7 @@ class BackendMaintain(Cog_Extension):
     
     @commands.command()
     async def restart(self, ctx:Context):
-        if(ctx.author.id == maintainer_id):
+        if(ctx.author.id in maintainer_id):
             prev_id = self.restart_process()
             if prev_id is not None:
                 await ctx.send(str.format("程序 {} 已終止, 重啟程序 {}", prev_id, self.process.pid))
