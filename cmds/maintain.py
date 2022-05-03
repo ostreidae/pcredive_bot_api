@@ -66,10 +66,28 @@ class BackendMaintain(Cog_Extension):
         if ctx.author.id != maintainer_id:
             await ctx.send("該使用者無法使用這項指令") 
             return
-        import requests, zipfile, io
+        import requests, zipfile, io, shutil
         r = requests.get(download_url)
-        z = zipfile.ZipFile(io.BytesIO(r.content))
-        z.extractall("./")
+        archive = zipfile.ZipFile(io.BytesIO(r.content))
+        shutil.rmtree('/cmds/pcredive_pvp', ignore_errors=True)
+        for file in archive.namelist():
+            if file.endswith('/'):
+                continue
+            if file.startswith('pcredive_bot_api-main/'):
+                source_path = file
+                target_path = file.replace('pcredive_bot_api-main/', '')
+                if target_path == '':
+                    continue
+                source = archive.open(source_path)
+                target = open(os.path.join(os.getcwd(), target_path), "wb")
+                with source, target:
+                    shutil.copyfileobj(source, target)
+        await ctx.send("更新完成, 重啟程序")
+        prev_id = self.restart_process()
+        if prev_id is not None:
+            await ctx.send(str.format("程序 {} 已終止, 重啟程序 {}", prev_id, self.process.pid))
+        else:
+            await ctx.send(str.format("重啟程序 {}", self.process.pid))
     
     @commands.command()
     async def restart(self, ctx:Context):

@@ -51,7 +51,7 @@ def get_ver():
     app_ver = ver_tmp.text.replace('Version：', '')
     return str(app_ver)
 
-def update_ver(root_dir='cmds/pcredive_pvp/data'):
+def update_ver(root_dir=''):
     header_path = os.path.join(root_dir, 'headers.json')
     default_headers = get_headers()
     with open(header_path, 'w', encoding='UTF-8') as f:
@@ -71,7 +71,7 @@ class pcrclient:
     def _makemd5(str) -> str:
         return md5((str + 'r!I@nt8e5i=').encode('utf8')).hexdigest()
     
-    def __init__(self, udid, short_udid, viewer_id, platform, proxy, root_dir='cmds/pcredive_pvp/data'):
+    def __init__(self, udid, short_udid, viewer_id, platform, proxy, root_dir=''):
         
         self.viewer_id = viewer_id
         self.short_udid = short_udid
@@ -176,7 +176,7 @@ def get_logger(logger=None):
         return logging.getLogger()
     return logger
 
-def get_pcr_client(root_dir='cmds/pcredive_pvp/data'):
+def get_pcr_client(root_dir=''):
     proxy_info = {
         "proxy": {
         
@@ -231,7 +231,7 @@ class PcrClientInfo:
         
     
 class PcrClientApi:
-    def __init__(self, root_dir='cmds/pcredive_pvp/data', logger=None):
+    def __init__(self, root_dir='', logger=None):
         self.logger = get_logger(logger)
         self.api = get_pcr_client(root_dir)
         self.api.login()
