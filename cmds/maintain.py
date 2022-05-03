@@ -63,7 +63,7 @@ class BackendMaintain(Cog_Extension):
     
     @commands.command()
     async def update(self, ctx:Context):
-        if ctx.author.id in maintainer_id:
+        if (ctx.author.id in maintainer_id) == False:
             await ctx.send("該使用者無法使用這項指令") 
             return
         import requests, zipfile, io, shutil
