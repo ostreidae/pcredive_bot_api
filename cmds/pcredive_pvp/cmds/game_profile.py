@@ -1,4 +1,5 @@
 import discord
+import discord.ext
 from discord.ext import commands
 from discord.ext.commands.context import Context
 from requests import ReadTimeout
@@ -102,9 +103,14 @@ def generate_embed_result(res:PcrClientInfo):
     embed.add_field(name="上次登入時間", value=str(datetime.datetime.fromtimestamp(res.last_login_time)), inline=False)
     return embed
 
+
+    
+
+
 class PcReDiveGameProfile(Cog_Extension):
     def __init__(self, bot):
         super().__init__(bot)
+        bot.event(self.on_message)
         self.config_dict = config
         self.api = PcrClientApi(configuration_dict=self.config_dict)
     
@@ -116,8 +122,14 @@ class PcReDiveGameProfile(Cog_Extension):
         res = await get_info(ctx, self.api, game_id)
         if res is not None:
             await ctx.send(embed=generate_embed_result(res))
-        
     
+    async def on_message(self, message):
+        content = message.content
+        if content == "GG":
+            await message.channel.send("ㄐㄐ")
+        else:
+            await self.bot.process_commands(message)
+        
     @commands.command()
     async def me(self, ctx:Context):
         '''[查詢自己的Id] --- me'''
