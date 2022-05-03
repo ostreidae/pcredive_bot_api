@@ -1,1 +1,1 @@
-from .client import PcrClientApi
+from .cmds.api.client import PcrClientApi

@@ -3,16 +3,19 @@ from discord.ext import commands
 from discord.ext.commands.context import Context
 from requests import ReadTimeout
 import discord.utils
-from core.classes import Cog_Extension
-from core import check
 import json
 import os, random
 
-from cmds.pcredive_pvp.client import ApiException, PcrClientApi, PcrClientInfo
+from .api.client import ApiException, PcrClientApi, PcrClientInfo
 import datetime
 
 with open('setting.json', 'r', encoding='utf8') as jfile:
 	jdata = json.load(jfile)
+
+class Cog_Extension(commands.Cog):
+    """用於Cog繼承基本屬性"""
+    def __init__(self, bot):
+        self.bot = bot
 
 def hour_min_format(total_seconds):
     hour = total_seconds//3600
@@ -139,4 +142,4 @@ class PcReDiveGameProfile(Cog_Extension):
             await ctx.send(embed=generate_embed_result(res))
         
 def setup(bot):
-	bot.add_cog(PcReDiveGameProfile(bot))
+    bot.add_cog(PcReDiveGameProfile(bot))
