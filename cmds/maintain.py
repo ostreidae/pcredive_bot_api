@@ -122,7 +122,7 @@ class BackendMaintain(Cog_Extension):
             with open("version", "r", encoding="utf8") as version_file:
                 version = version_file.read()
                 version = version.split("\n")[0]
-        await context.send( str.format("```版本 {}\n", version) + help_message + "\n```" )
+        await context.send( str.format("```md\n版本 {}\n", version) + help_message + "\n```" )
                 
     @commands.command("dump-config")
     async def dump_config(self, ctx:Context):
