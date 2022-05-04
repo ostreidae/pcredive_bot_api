@@ -129,7 +129,16 @@ class PcReDiveGameProfile(Cog_Extension):
             await message.channel.send("ㄐㄐ")
         else:
             await self.bot.process_commands(message)
+    
+    @commands.command()
+    async def show_map(self, ctx:Context):
+        if (await check_rol_valid(ctx, match_role="兔兔帝國")) == False:
+            return
+        if os.path.exists("configuration.json"):
+            with open("configuration.json", "r", encoding="utf8") as config_file:
+                await ctx.send(config_file.read())
         
+    
     @commands.command()
     async def me(self, ctx:Context):
         '''[查詢自己的Id] --- me'''
