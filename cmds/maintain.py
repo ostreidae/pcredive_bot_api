@@ -39,6 +39,10 @@ with open('setting.json', 'r', encoding='utf8') as jfile:
  
 with open('version', 'r', encoding='utf8') as version_file:
 	version = version_file.read()
+
+prefix = jdata.get("Prefix", "")
+if type(prefix) is list:
+    prefix = prefix[0] if len(prefix) >=1 else ""
  
 help_message = str.format(help_message, jdata.get("Prefix", ""))
 url = "https://raw.githubusercontent.com/ostreidae/pcredive_bot_api/main/version"
