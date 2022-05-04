@@ -2,7 +2,6 @@ test.py
 bot.py
 setting.json
 original_cmds/
-core/
 __pycache__
 .vscode/
 
