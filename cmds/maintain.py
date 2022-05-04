@@ -116,7 +116,7 @@ class BackendMaintain(Cog_Extension):
                 with source, target:
                     shutil.copyfileobj(source, target)
         await ctx.send("更新完成, 重啟程序")
-        self.reload(ctx)
+        await self.reload(ctx)
         prev_id = self.restart_process()
         if prev_id is not None:
             await ctx.send(str.format("程序 {} 已終止, 重啟程序 {}", prev_id, self.process.pid))
