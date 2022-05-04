@@ -44,6 +44,7 @@ async def process_error(s, ctx, error):
 class BackendMaintain(Cog_Extension):
     def __init__(self, bot):
         super().__init__(bot)
+        bot.remove_command('help')
         self.lock = threading.Lock()
         self.process = None
         self.restart_process()

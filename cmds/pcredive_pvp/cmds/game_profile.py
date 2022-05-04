@@ -111,6 +111,7 @@ class PcReDiveGameProfile(Cog_Extension):
     def __init__(self, bot):
         super().__init__(bot)
         bot.event(self.on_message)
+        bot.remove_command('help')
         self.config_dict = config
         self.api = PcrClientApi(configuration_dict=self.config_dict)
     
@@ -129,7 +130,21 @@ class PcReDiveGameProfile(Cog_Extension):
             await message.channel.send("ㄐㄐ")
         else:
             await self.bot.process_commands(message)
-    
+            
+    @commands.command()
+    async def help(self, context):
+        if os.path.exists("version"):
+            with open("version", "r", encoding="utf8") as version_file:
+                version = version_file.read()
+        await context.send( str.format("```\n版本 {} \n", version) +
+"""
+  bind  [綁定玩家Id] --- bind {自己的遊戲id}
+  me    [查詢自己的Id] --- me
+  query [查詢玩家Id] --- query {遊戲id}
+```
+"""
+        )
+        
     @commands.command()
     async def show_map(self, ctx:Context):
         if (await check_rol_valid(ctx, match_role="兔兔帝國")) == False:
