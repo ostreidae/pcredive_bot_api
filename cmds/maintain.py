@@ -19,20 +19,20 @@ from core.errors import Errors
 help_message = \
 """
 【競技場功能】
-  [綁定Discord Id] --- bind  {自己的遊戲id}
-  [查詢自己的 Id]  --- me 
-  [查詢玩家Id]     --- query {遊戲id}
+  [綁定Discord Id] --- {0}bind  {{自己的遊戲id}}
+  [查詢自己的 Id]  --- {0}me 
+  [查詢玩家Id]     --- {0}query {{遊戲id}}
   
 【維護功能】
-  [從github更新版本] --- update
-  [重新啟動]         --- restart
-  [暫停查詢功能]     --- stop
-  [下載檔案]         --- download {檔名路徑} {URL位址}
-  [刪除檔案]         --- delete {檔名路徑}
-  [查詢程序列表]     --- list-child-process
-  [停止所有子程序]   --- stop-child-process
-  [印出目前設定檔內容] --- dump-config
-  [開發日誌] --- about
+  [從github更新版本] --- {0}update
+  [重新啟動]         --- {0}restart
+  [暫停查詢功能]     --- {0}stop
+  [下載檔案]         --- {0}download {{檔名路徑}} {{URL位址}}
+  [刪除檔案]         --- {0}delete {{檔名路徑}}
+  [查詢程序列表]     --- {0}list-child-process
+  [停止所有子程序]     --- {0}stop-child-process
+  [印出目前設定檔內容] --- {0}dump-config
+  [開發日誌]          --- {0}about
 """
 with open('setting.json', 'r', encoding='utf8') as jfile:
 	jdata : dict = json.load(jfile)
@@ -40,6 +40,7 @@ with open('setting.json', 'r', encoding='utf8') as jfile:
 with open('version', 'r', encoding='utf8') as version_file:
 	version = version_file.read()
  
+help_message = str.format(help_message, jdata.get("Prefix", ""))
 url = "https://raw.githubusercontent.com/ostreidae/pcredive_bot_api/main/version"
 download_url = "https://github.com/ostreidae/pcredive_bot_api/archive/refs/heads/main.zip"
 maintainer_id = jdata.get("Owner_id")
