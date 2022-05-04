@@ -4,10 +4,11 @@ from discord.ext import commands
 from discord.ext.commands.context import Context
 from requests import ReadTimeout
 import discord.utils
+import requests
 from core.classes import Cog_Extension
 from core import check
 import json
-import os, random
+import os, io
 
 import datetime
 import sys
@@ -18,24 +19,31 @@ from core.errors import Errors
 help_message = \
 """
 【競技場功能】
-  bind  [綁定玩家Id] --- bind {自己的遊戲id}
-  me    [查詢自己的Id] --- me
-  query [查詢玩家Id] --- query {遊戲id}
+  [綁定Discord Id] --- bind  {自己的遊戲id}
+  [查詢自己的 Id]  --- me 
+  [查詢玩家Id]     --- query {遊戲id}
   
 【維護功能】
-  update
-  restart
-```
+  [從github更新版本] --- update
+  [重新啟動]         --- restart
+  [暫停查詢功能]     --- stop
+  [下載檔案]         --- download {檔名路徑} {URL位址}
+  [刪除檔案]         --- delete {檔名路徑}
+  [查詢程序列表]     --- list-child-process
+  [停止所有子程序]   --- stop-child-process
+  [印出目前設定檔內容] --- dump-config
+  [開發日誌] --- about
 """
-url = "https://raw.githubusercontent.com/ostreidae/pcredive_bot_api/main/version"
-download_url = "https://github.com/ostreidae/pcredive_bot_api/archive/refs/heads/main.zip"
-maintainer_id = [764383189439348777, 971077292384219226]
-
 with open('setting.json', 'r', encoding='utf8') as jfile:
-	jdata = json.load(jfile)
+	jdata : dict = json.load(jfile)
  
 with open('version', 'r', encoding='utf8') as version_file:
 	version = version_file.read()
+ 
+url = "https://raw.githubusercontent.com/ostreidae/pcredive_bot_api/main/version"
+download_url = "https://github.com/ostreidae/pcredive_bot_api/archive/refs/heads/main.zip"
+maintainer_id = jdata.get("Owner_id")
+
 
 async def send_another(channel):
     await channel.send("Hello World")
@@ -58,9 +66,8 @@ class BackendMaintain(Cog_Extension):
         bot.remove_command('help')
         self.lock = threading.Lock()
         self.process = None
-        #self.restart_process()
+        self.restart_process()
         
-    
     def restart_process(self):
         with self.lock:
             if self.process is None:
@@ -73,31 +80,115 @@ class BackendMaintain(Cog_Extension):
             else:
                 self.process = subprocess.Popen(str.format('python ./cmds/pcredive_pvp/run.py {}', os.getpid()))
                 
+    async def check_permission(self, ctx):
+        if (ctx.author.id in maintainer_id) == False:
+            await ctx.send("該使用者無法使用這項指令") 
+            return False
+        return True
+    
+    async def reload(self, ctx):
+        extension = "maintain"
+        pid = self.stop_process()
+        self.bot.reload_extension(f'cmds.{extension}')
+        if pid is None:
+            await ctx.send(f'維護程式重新加載完成')
+        else:
+            await ctx.send(str.format('維護套件重新加載完成, 子程序 {} 已終止', pid))
+            
     def stop_process(self):
         with self.lock:
             if self.process is not None:
                 if self.process.poll() is None:
+                    pid = self.process.pid
                     self.process.kill()
                     self.process = None
+                    return pid
+                
+    @commands.command()
+    async def about(self, ctx:Context):
+        if os.path.exists("version"):
+            with open("version", "r", encoding="utf8") as version_file:
+                version = version_file.read()
+                await ctx.send(str.format("```\n版本 {} \n```", version))
                 
     @commands.command()
     async def help(self, context):
         if os.path.exists("version"):
             with open("version", "r", encoding="utf8") as version_file:
                 version = version_file.read()
-        await context.send( str.format("```\n版本 {} \n", version) + help_message)
-            
-    @commands.command()
-    async def reload(self, ctx):
-        extension = "maintain"
-        self.stop_process()
-        self.bot.reload_extension(f'cmds.{extension}')
-        await ctx.send(f'Loaded {extension} done.')
+                version = version.split("\n")[0]
+        await context.send( str.format("```版本 {}\n", version) + help_message + "\n```" )
+                
+    @commands.command("dump-config")
+    async def dump_config(self, ctx:Context):
+        if os.path.exists("configuration.json"):
+            with open("configuration.json", "r", encoding="utf8") as config_file:
+                await ctx.send(config_file.read())
+                
+    @commands.command("stop-child-process")
+    async def stop_child_process(self, ctx:Context):
+        if await self.check_permission(ctx) == False:
+            return
+        import psutil
+        current_process = psutil.Process()
+        children = current_process.children(recursive=True)
+        pid_list = [str(ch.pid) for ch in children]
+        for ch in children:
+            ch.kill()
+        await ctx.send(str.format("子程序列表: {} 已經停止", ", ".join(pid_list)))
+    
+    @commands.command("list-child-process")
+    async def list_child_process(self, ctx:Context):
+        if await self.check_permission(ctx) == False:
+            return
+        import psutil
+        current_process = psutil.Process()
+        children = current_process.children(recursive=True)
+        pid_list = [str(ch.pid) for ch in children]
+        await ctx.send(str.format("子程序列表: {}", ", ".join(pid_list)))
+        
     
     @commands.command()
+    async def delete(self, ctx:Context):
+        if await self.check_permission(ctx) == False:
+            return
+        message : str = ctx.message.content
+        arr = message.split(" ", 2)
+        if len(arr) <= 1:
+            await ctx.send("格式錯誤")
+            return
+        os.remove(arr[1])
+        await ctx.send(str.format("檔案 {} 已刪除", arr[1]))
+        
+    @commands.command()
+    async def download(self, ctx:Context):
+        if await self.check_permission(ctx) == False:
+            return
+        message : str = ctx.message.content
+        arr = message.split(" ", 3)
+        if len(arr) <= 2:
+            await ctx.send("格式錯誤")
+            return
+        file_name = arr[1]
+        url = arr[2]
+        resp = requests.get(url)
+        with open(file_name, "wb") as f:
+            f.write(resp.content)
+        await ctx.send(str.format("檔案 {} 已從 {} 下載完成", file_name, url))
+    
+    @commands.command()
+    async def stop(self, ctx:Context):
+        if await self.check_permission(ctx) == False:
+            return
+        pid = self.stop_process()
+        if pid is not None:
+            await ctx.send(str.format("程序 {} 終止", pid))
+        else:
+            await ctx.send("目前無運行程序")
+            
+    @commands.command()
     async def update(self, ctx:Context):
-        if (ctx.author.id in maintainer_id) == False:
-            await ctx.send("該使用者無法使用這項指令") 
+        if await self.check_permission(ctx) == False:
             return
         import requests, zipfile, io, shutil
         r = requests.get(download_url)
@@ -117,24 +208,12 @@ class BackendMaintain(Cog_Extension):
                     shutil.copyfileobj(source, target)
         await ctx.send("更新完成, 重啟程序")
         await self.reload(ctx)
-        prev_id = self.restart_process()
-        if prev_id is not None:
-            await ctx.send(str.format("程序 {} 已終止, 重啟程序 {}", prev_id, self.process.pid))
-        else:
-            await ctx.send(str.format("重啟程序 {}", self.process.pid))
-    
+
     @commands.command()
     async def restart(self, ctx:Context):
-        if(ctx.author.id in maintainer_id):
-            prev_id = self.restart_process()
-            if prev_id is not None:
-                await ctx.send(str.format("程序 {} 已終止, 重啟程序 {}", prev_id, self.process.pid))
-            else:
-                await ctx.send(str.format("重啟程序 {}", self.process.pid))
-            #await send_another(ctx.channel)
-        else:
-            await ctx.send("該使用者無法使用這項指令")
-        #sys.exit(0)
+        if await self.check_permission(ctx) == False:
+            return
+        await self.reload(ctx)
 
 
 def setup(bot):
