@@ -71,16 +71,22 @@ async def check_rol_valid(ctx:Context, match_role="兔兔帝國"):
     return False
     
 
-async def get_valid_id(ctx:Context, message, doc=""):
+def get_valid_id(ctx:Context):
+    game_id = 0
     try:
-        target_id = int(message)
+        arr = ctx.message.content.split(" ")
+        arr = [c for c in arr if len(c)>=1]
+        if len(arr) == 0:
+            return None, None
+        if len(arr) >= 2:
+            target_id = int(arr[1])
+        if len(arr) >= 3:
+            game_id = int(arr[2])
         if target_id < 10_000_000:
-            await ctx.send(str.format("遊戲id格式不正確,格式為 `{}`", format_doc(doc)))
-            return
+            return None, None
     except:
-        await ctx.send(str.format("遊戲id格式不正確,格式為 `{}`", format_doc(doc)))
-        return
-    return target_id
+        return None, None
+    return target_id, game_id
 
 async def get_info(ctx:Context, api:PcrClientApi, game_id):
     try:
@@ -135,34 +141,33 @@ class PcReDiveGameProfile(Cog_Extension):
     @commands.command()
     async def me(self, ctx:Context):
         '''[查詢自己的Id] --- me'''
-        if (await check_rol_valid(ctx, match_role="兔兔帝國")) == False:
-            return
         await self.query_self(ctx)
         
     
     @commands.command()
     async def bind(self, ctx:Context):
-        '''[綁定玩家Id] --- bind {自己的遊戲id}'''
-        message = parse_command_after(ctx.message.content, "bind")
-        if (await check_rol_valid(ctx, match_role="兔兔帝國")) == False:
-            return
-        game_id  = await get_valid_id(ctx, message, doc=self.bind.short_doc)
+        '''[綁定玩家Id] --- bind {自己的遊戲id} {discord id}'''
+        game_id, dc_id  = get_valid_id(ctx)
         if game_id is None:
+            await ctx.send(str.format("遊戲id格式不正確,格式為 `{}`", format_doc(self.bind.short_doc)))
             return
-        self.api.bind_user_id(ctx.author.id, game_id)
+        
+        if dc_id is None:
+            self.api.bind_user_id(ctx.author.id, game_id)
+        else:
+            self.api.bind_user_id(game_id, dc_id)
+            
         await ctx.send("綁定成功")
         
     @commands.command()
     async def query(self, ctx:Context):
         '''[查詢玩家Id] --- query {遊戲id}'''
-        message = parse_command_after(ctx.message.content, "query")
-        if (await check_rol_valid(ctx, match_role="兔兔帝國")) == False:
-            return
-        if message.strip() == "":
+        if ctx.message.content.strip() == "":
             await self.query_self(ctx)
             return
-        game_id = await get_valid_id(ctx, message, doc=self.bind.short_doc)
+        game_id, _ = get_valid_id(ctx)
         if game_id is None:
+            await ctx.send(str.format("遊戲id格式不正確,格式為 `{}`", format_doc(self.query.short_doc)))
             return
         
         res = await get_info(ctx, self.api, game_id)
