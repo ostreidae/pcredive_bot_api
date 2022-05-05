@@ -80,21 +80,21 @@ async def check_rol_valid(ctx:Context, match_role="兔兔帝國"):
     
 
 def get_valid_id(ctx:Context):
-    game_id = 0
+    dc_id = None
     try:
         arr = ctx.message.content.split(" ")
         arr = [c for c in arr if len(c)>=1]
         if len(arr) == 0:
             return None, None
         if len(arr) >= 2:
-            target_id = int(arr[1])
+            game_id = int(arr[1])
         if len(arr) >= 3:
-            game_id = int(arr[2])
-        if target_id < 10_000_000:
+            dc_id = int(arr[2])
+        if game_id < 10_000_000:
             return None, None
     except:
         return None, None
-    return target_id, game_id
+    return game_id, dc_id
 
 async def get_info(ctx:Context, api:PcrClientApi, game_id):
     try:
