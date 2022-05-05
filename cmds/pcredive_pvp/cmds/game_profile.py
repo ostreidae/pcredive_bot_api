@@ -18,6 +18,14 @@ if os.path.exists("configuration.json"):
         config = json.load(config_file)
 else:
     config = {}
+    
+maintainer_id = jdata.get("Owner_id")
+async def check_permission(ctx):
+    if (ctx.author.id in maintainer_id) == False:
+        await ctx.send("該使用者無法使用這項指令") 
+        return False
+    return True
+
 
 class Cog_Extension(commands.Cog):
     """用於Cog繼承基本屬性"""
@@ -155,7 +163,10 @@ class PcReDiveGameProfile(Cog_Extension):
         if dc_id is None:
             self.api.bind_user_id(ctx.author.id, game_id)
         else:
-            self.api.bind_user_id(game_id, dc_id)
+            if await check_permission(ctx) == False:
+                return
+            else:
+                self.api.bind_user_id(dc_id, game_id)
             
         await ctx.send("綁定成功")
         
