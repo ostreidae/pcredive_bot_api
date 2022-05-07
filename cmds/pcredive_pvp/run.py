@@ -43,12 +43,29 @@ def get_int(arg:str):
         return -1
 
 
-
 with open('setting.json', 'r', encoding='utf8') as jfile:
-    jdata = json.load(jfile)
-    
+    jdata : dict = json.load(jfile)
     
 
+from interactions_cmd import init_asyncio
+
+
+def init_interaction_py():
+    token = jdata.get("TOKEN", "")
+    
+    init_asyncio()
+    from interactions_cmd.main import BotModelProcessor
+    bot_processor = BotModelProcessor(token=token)
+    bot_processor.init_model()
+    bot_processor.start()
+        
+    
+def init_interactions_py_backgroud_thread():
+    thread = threading.Thread(target=init_interaction_py, daemon=True)
+    thread.start()
+    return thread
+    
+    
 if __name__ == "__main__":
     print(sys.argv)
     if len(sys.argv) > 1:
@@ -63,5 +80,7 @@ if __name__ == "__main__":
         print(">> Subprocess Bot is online <<")
     #dir_path         = os.path.dirname(__file__)
     #target_file_path = os.path.join(dir_path, "game_profile.py")
+    thread = init_interactions_py_backgroud_thread()
+    #thread.join()
     bot.load_extension("cmds.game_profile")
     bot.run(jdata['TOKEN'])
