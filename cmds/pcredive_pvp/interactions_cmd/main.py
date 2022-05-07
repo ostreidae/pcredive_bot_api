@@ -15,7 +15,7 @@ class BotModelProcessor:
     def init_model(self):
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.get_guilds())
-        loop.run_until_complete(self.remove_all_commands())
+        #loop.run_until_complete(self.remove_all_commands())
         self.commands.bind_bot_commands()
     
     def start(self):
