@@ -15,7 +15,7 @@ class BotModelProcessor:
     def init_model(self):
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.get_guilds())
-        #loop.run_until_complete(self.remove_all_commands())
+        loop.run_until_complete(self.remove_all_commands())
         self.commands.bind_bot_commands()
     
     def start(self):
@@ -55,19 +55,44 @@ class BotCommands:
     async def on_ready(self):
         print(">> Interaction Bot is online <<")
 
-    async def main_command(self, ctx, response:str):
-        await ctx.send(str.format("Hi there! {0}",response))
+    async def main_command(self, ctx, round:str, boss_num:str, damage:str, result_type:str):
+        if result_type == "尾刀":
+            await ctx.send(str.format("報傷害 || {0}周 {1}王 {2}傷害 尾刀",round,boss_num,damage))
+        elif result_type == "殘刀":
+            await ctx.send(str.format("報傷害 || {0}周 {1}王 {2}傷害 殘刀",round,boss_num,damage))
+        else:
+            await ctx.send(str.format("報傷害 || {0}周 {1}王 {2}傷害",round,boss_num,damage))
+        
   
     def bind_bot_commands(self):
         bot = self.bot
         guilds = self.model.guilds
         
-        main_dec = bot.command(name="main", description="主控面板", scope=595600603879571459, options=[interactions.Option(
-                    name="輸入文字",
-                    description="底下重複一樣的內容",
+        main_dec = bot.command(name="main", description="主控面板", scope=guilds, options=
+                [interactions.Option(
+                    name="round",
+                    description="周目",
                     type=interactions.OptionType.STRING,
                     required=True,
-                )])
+                ),interactions.Option(
+                    name="boss_num",
+                    description="王",
+                    type=interactions.OptionType.STRING,
+                    required=True,
+                ),interactions.Option(
+                    name="damage",
+                    description="傷害",
+                    type=interactions.OptionType.STRING,
+                    required=True,
+                ),
+                interactions.Option(
+                    name="result_type",
+                    description="正刀/尾刀/殘刀",
+                    type=interactions.OptionType.STRING,
+                    required=True,
+                    choices=[interactions.Choice(name="正刀", value="正刀"),interactions.Choice(name="尾刀", value="尾刀"),interactions.Choice(name="殘刀", value="殘刀"),]
+                
+                ),])
         main_dec(self.main_command)
         
         bot.event(self.on_ready)
