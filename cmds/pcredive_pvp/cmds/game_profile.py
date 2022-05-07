@@ -142,6 +142,7 @@ class PcReDiveGameProfile(Cog_Extension):
         content = message.content
         if content == "GG":
             await message.channel.send("ㄐㄐ")
+            await message.channel.send("https://c.tenor.com/3OAB3vvodXIAAAAj/kyaru.gif")
         else:
             await self.bot.process_commands(message)
             
