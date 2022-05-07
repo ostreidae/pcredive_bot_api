@@ -210,6 +210,7 @@ class BackendMaintain(Cog_Extension):
                 source = archive.open(source_path)
                 target = open(os.path.join(os.getcwd(), target_path), "wb")
                 with source, target:
+                    os.makedirs(os.path.dirname(target), exist_ok=True)
                     shutil.copyfileobj(source, target)
         await ctx.send("更新完成, 重啟程序")
         await self.reload(ctx)
