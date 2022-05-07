@@ -55,14 +55,19 @@ class BotCommands:
     async def on_ready(self):
         print(">> Interaction Bot is online <<")
 
-    async def main_command(self, ctx):
-        await ctx.send("Hi there!")
+    async def main_command(self, ctx, response:str):
+        await ctx.send(str.format("Hi there! {0}",response))
   
     def bind_bot_commands(self):
         bot = self.bot
         guilds = self.model.guilds
         
-        main_dec = bot.command(name="main", description="主控面板", scope=guilds)
+        main_dec = bot.command(name="main", description="主控面板", scope=guilds, options=[interactions.Option(
+                    name="輸入文字",
+                    description="底下重複一樣的內容",
+                    type=interactions.OptionType.STRING,
+                    required=True,
+                )])
         main_dec(self.main_command)
         
         bot.event(self.on_ready)
