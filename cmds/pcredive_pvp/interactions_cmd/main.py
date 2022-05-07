@@ -62,7 +62,7 @@ class BotCommands:
         bot = self.bot
         guilds = self.model.guilds
         
-        main_dec = bot.command(name="main", description="主控面板", scope=guilds, options=[interactions.Option(
+        main_dec = bot.command(name="main", description="主控面板", scope=595600603879571459, options=[interactions.Option(
                     name="輸入文字",
                     description="底下重複一樣的內容",
                     type=interactions.OptionType.STRING,
