@@ -65,7 +65,7 @@ def init_interactions_py_backgroud_thread():
     thread.start()
     return thread
     
-    
+
 if __name__ == "__main__":
     print(sys.argv)
     if len(sys.argv) > 1:
