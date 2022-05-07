@@ -3,4 +3,7 @@ beautifulsoup4
 attrs
 discord.py
 psutil
-discord-py-interactions >= 4.0.2
+requests
+msgpack
+sqlalchemy
+lxml
