@@ -207,10 +207,12 @@ class BackendMaintain(Cog_Extension):
                 target_path = file.replace('pcredive_bot_api-main/', '')
                 if target_path == '':
                     continue
+                target_path = os.path.join(os.getcwd(), target_path)
+                dir_name = os.path.dirname(target_path)
+                os.makedirs(dir_name, exist_ok=True)
                 source = archive.open(source_path)
-                target = open(os.path.join(os.getcwd(), target_path), "wb")
+                target = open(target_path, "wb")
                 with source, target:
-                    os.makedirs(os.path.dirname(target), exist_ok=True)
                     shutil.copyfileobj(source, target)
         await ctx.send("更新完成, 重啟程序")
         await self.reload(ctx)
