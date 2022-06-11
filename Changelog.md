@@ -1,5 +1,9 @@
 ## 開發日誌
 
+# v0.1.4
+  - 修正重登問題 code 214
+  - 簡化排名顯示介面
+  
 # v0.1.3
   - 可以重新加載 maintain 模組
   - 實作 download-file, delete-file 功能

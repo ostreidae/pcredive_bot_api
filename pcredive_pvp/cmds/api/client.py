@@ -1,4 +1,7 @@
+import asyncio
 import logging
+import threading
+import aiohttp
 from msgpack import packb, unpackb
 from random import randint
 from hashlib import md5, sha1
@@ -59,6 +62,10 @@ def update_ver(root_dir=''):
         json.dump(default_headers, f, indent=4, ensure_ascii=False)
     #sv.logger.info(f'pcr-jjc3-tw的游戏版本已更新至最新')
 
+async def gather_sequential(*coros):
+    for coro in coros:
+        await coro
+
 class ApiException(Exception):
     def __init__(self, message, code):
         super().__init__(message)
@@ -79,6 +86,7 @@ class pcrclient:
         self.udid = udid
         self.headers = {}
         self.proxy = proxy
+        
 
         header_path = os.path.join(root_dir, 'headers.json')
         with open(header_path, 'r', encoding='UTF-8') as f:
@@ -92,6 +100,10 @@ class pcrclient:
         self.headers['platform'] = '1'
 
         self.shouldLogin = True
+        self.last_login_time = 0
+        self.login_lock = threading.Lock()
+        self.login_async_lock = None
+        self.async_session = None
 
     @staticmethod
     def createkey() -> bytes:
@@ -134,21 +146,58 @@ class pcrclient:
     def _ivstring() -> str:
         return ''.join([choice(pcrclient.alphabet) for _ in range(32)])
 
-    def callapi(self, apiurl: str, request: dict, noerr: bool = False):
+    def _get_crypted_data_header(self, apiurl:str, request:dict):
         key = pcrclient.createkey()
         if self.viewer_id is not None:
-                request['viewer_id'] = b64encode(self.encrypt(str(self.viewer_id), key))
+            request['viewer_id'] = b64encode(self.encrypt(str(self.viewer_id), key))
 
-        packed, crypted = self.pack(request, key)
-        self.headers['PARAM'] = sha1((self.udid + apiurl + b64encode(packed).decode('utf8') + str(self.viewer_id)).encode('utf8')).hexdigest()
-        self.headers['SHORT-UDID'] = pcrclient._encode(self.short_udid)
-        url = self.apiroot + apiurl
-        resp = requests.post(url, data=crypted, headers = self.headers)
-        return self._parse_data(resp, url, noerr)
+        packed, crypted_data = self.pack(request, key)
+        headers = dict(self.headers)
+        headers['PARAM'] = sha1((self.udid + apiurl + b64encode(packed).decode('utf8') + str(self.viewer_id)).encode('utf8')).hexdigest()
+        headers['SHORT-UDID'] = pcrclient._encode(self.short_udid)
+        return crypted_data, headers
+        
+
+    def callapi(self, apiurl: str, request: dict, noerr: bool = False, use_async=False):
+        try:
+            if use_async is False:
+                return self._callapi(apiurl, request, noerr)
+            else:
+                return self._callapi_async(apiurl, request, noerr)
+        except ApiException as exc:
+            if exc.code is None or exc.code != "214":
+                raise exc
+            if use_async is False:
+                self.login()
+                return self._callapi(apiurl, request, noerr)
+            else:
+                return gather_sequential(
+                    self.login_async(),
+                    self._callapi_async(apiurl, request, noerr)
+                )
+            
     
-    def _parse_data(self, resp, apiurl="", noerr: bool = False):
-        response = resp.content
-        response = self.unpack(response)[0]
+    def _callapi(self, apiurl: str, request: dict, noerr: bool = False):
+        url = self.apiroot + apiurl
+        crypted, headers = self._get_crypted_data_header(apiurl, request)
+        resp = requests.post(url, data=crypted, headers=headers)
+        return self._parse_data(resp.content, url, noerr)
+            
+    async def _callapi_async(self, apiurl: str, request: dict, noerr: bool = False):
+        crypted, headers = self._get_crypted_data_header(apiurl, request)
+        url     = self.apiroot + apiurl
+        session = self.async_session
+        async with session.post(url, data=crypted, headers=headers) as resp:
+            resp = await resp.read()
+            return self._parse_data(resp, url, noerr)
+        
+    async def start_async_session(self):
+        timeout = aiohttp.ClientTimeout(total=10)
+        self.async_session = aiohttp.ClientSession(timeout=timeout)
+        self.login_async_lock = asyncio.Lock()
+    
+    def _parse_data(self, response_bytes:bytes, apiurl="", noerr: bool = False):
+        response = self.unpack(response_bytes)[0]
         data_headers = response['data_headers']
 
         if 'viewer_id' in data_headers:
@@ -162,15 +211,31 @@ class pcrclient:
             data = data['server_error']
             code = data_headers['result_code']
             print(f'pcrclient: {apiurl} api failed code = {code}, {data}')
-            raise ApiException(str(code), str(data))
+            raise ApiException(str(data), str(code))
         return data
     
     def login(self):
-        self.callapi('/check/check_agreement', {})
-        self.callapi('/check/game_start', {})
-        self.callapi('/load/index', {
-            'carrier': 'Android'
-        })
+        if time.time() - self.last_login_time < 10:
+            return
+        with self.login_lock:
+            self.callapi('/check/check_agreement', {})
+            self.callapi('/check/game_start', {})
+            self.callapi('/load/index', {
+                'carrier': 'Android'
+            })
+            self.last_login_time = time.time()
+    
+    async def login_async(self):
+        if time.time() - self.last_login_time < 10:
+            return
+        async with self.login_async_lock:
+            p1 = self.callapi('/check/check_agreement', {}, use_async=True)
+            p2 = self.callapi('/check/game_start', {}, use_async=True)
+            p3 = self.callapi('/load/index', {
+                'carrier': 'Android'
+            }, use_async=True)
+            await asyncio.gather(p1,p2,p3)
+            self.last_login_time = time.time()
 
 def get_logger(logger=None):
     if logger is None:
@@ -247,12 +312,19 @@ class PcrClientApi:
             target_dict[str(key)] = int(val)
         configuration_dict["binding_id"] = target_dict
         self.binding_id_dict =  target_dict
+    
+    @property
+    def is_async_start(self):
+        return self.api.async_session is not None
+    
+    async def start_async_session(self):
+        await self.api.start_async_session()
         
     def dump_setting(self):
         with open("configuration.json", "w") as f:
             json.dump(self.config_dict, f, sort_keys=true, indent=4)
-        
-    def query_target_user_game_id(self, game_id:int) -> PcrClientInfo:
+            
+    def _get_from_cache(self, game_id):
         current_ts = (time.time()*1e3)
         last_state = self.cache_state.get(game_id, None)
         if last_state is not None:
@@ -261,17 +333,49 @@ class PcrClientApi:
                 if type(res) is Exception or type(res) is ApiException:
                     raise res
                 return res
-
+        return None
+    
+    def _process_except(self, game_id:int, err:Exception):
+        if type(err) is ApiException:
+            err : ApiException = err
+            if err.code is None or err.code != "214":
+                self.cache_state[game_id] = (err, int(time.time()*1e3))
+            raise err            
+        else:
+            self.cache_state[game_id] = (err, int(time.time()*1e3))
+            raise err
+        
+    async def login_async(self):
+        await self.api.login_async()
+        
+    def query_target_user_game_id(self, game_id:int) -> PcrClientInfo:
+        last_state = self._get_from_cache(game_id)
+        if last_state is not None:
+            return last_state
         try:
             res = self.api.callapi('/profile/get_profile', {'target_viewer_id': int(game_id)})
             ts  = int(time.time()*1e3)
             res = PcrClientInfo.from_dict(res)
         except Exception as err:
-            self.cache_state[game_id] = (err, int(time.time()*1e3))
-            raise err
-
+            self._process_except(game_id, err)
+            
         self.cache_state[game_id] = (res, ts)
         return res
+    
+    async def query_target_user_game_id_async(self, game_id:int):
+        last_state = self._get_from_cache(game_id)
+        if last_state is not None:
+            return last_state
+        try:
+            res = await self.api.callapi('/profile/get_profile', {'target_viewer_id': int(game_id)}, use_async=True)
+            ts  = int(time.time()*1e3)
+            res = PcrClientInfo.from_dict(res)
+        except Exception as err:
+            self._process_except(game_id, err)
+            
+        self.cache_state[game_id] = (res, ts)
+        return res
+        
         
     def query_target_user_game_id_fromdc(self, dc_id:int) -> PcrClientInfo:
         game_id = self.binding_id_dict.get(dc_id, None)

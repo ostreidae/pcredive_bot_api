@@ -47,14 +47,14 @@ with open('setting.json', 'r', encoding='utf8') as jfile:
     jdata : dict = json.load(jfile)
     
 
-from interactions_cmd import init_asyncio
+from pcredive_pvp.interactions import init_asyncio
 
 
 def init_interaction_py():
     token = jdata.get("TOKEN", "")
     
     init_asyncio()
-    from interactions_cmd.main import BotModelProcessor
+    from pcredive_pvp.interactions.main import BotModelProcessor
     bot_processor = BotModelProcessor(token=token)
     bot_processor.init_model()
     bot_processor.start()
@@ -82,5 +82,5 @@ if __name__ == "__main__":
     #target_file_path = os.path.join(dir_path, "game_profile.py")
     thread = init_interactions_py_backgroud_thread()
     #thread.join()
-    bot.load_extension("cmds.game_profile")
+    bot.load_extension("pcredive_pvp.cmds.game_profile")
     bot.run(jdata['TOKEN'])

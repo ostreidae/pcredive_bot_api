@@ -9,7 +9,7 @@ from core.classes import Cog_Extension
 from core import check
 import json
 import os, io
-
+import asyncio
 import datetime
 import sys
 from discord.ext.commands.context import Context
@@ -65,25 +65,31 @@ async def process_error(s, ctx, error):
     else:
         await Errors.default_error(s, ctx, error)
 
+def submit_task(coro:asyncio.coroutine, done_callback:callable):
+    task = asyncio.create_task(coro)
+    if callable(done_callback):
+        task.add_done_callback(done_callback)
+    return task
+
 class BackendMaintain(Cog_Extension):
     def __init__(self, bot):
         super().__init__(bot)
         bot.remove_command('help')
         self.lock = threading.Lock()
         self.process = None
-        self.restart_process()
+        #self.restart_process()
         
     def restart_process(self):
         with self.lock:
             if self.process is None:
-                self.process = subprocess.Popen(str.format('python ./cmds/pcredive_pvp/run.py {}', os.getpid()))
+                self.process = subprocess.Popen(str.format('python ./pcredive_pvp_run.py {}', os.getpid()))
             elif self.process.poll() is None:
                 prev_id = self.process.pid
                 self.process.kill()
-                self.process = subprocess.Popen(str.format('python ./cmds/pcredive_pvp/run.py {}', os.getpid()))
+                self.process = subprocess.Popen(str.format('python ./pcredive_pvp_run.py {}', os.getpid()))
                 return prev_id
             else:
-                self.process = subprocess.Popen(str.format('python ./cmds/pcredive_pvp/run.py {}', os.getpid()))
+                self.process = subprocess.Popen(str.format('python ./pcredive_pvp_run.py {}', os.getpid()))
                 
     async def check_permission(self, ctx):
         if (ctx.author.id in maintainer_id) == False:

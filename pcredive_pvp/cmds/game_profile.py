@@ -96,25 +96,45 @@ def get_valid_id(ctx:Context):
         return None, None
     return game_id, dc_id
 
-async def get_info(ctx:Context, api:PcrClientApi, game_id):
+async def _re_get_info(ctx:Context, api:PcrClientApi, game_id):
     try:
-        res = api.query_target_user_game_id(game_id)
+        res = await api.query_target_user_game_id_async(game_id)
     except ApiException as api_exception:
         await ctx.send(str.format("code={} data={}", api_exception.code, api_exception.message))
-        return
+    except Exception as err:
+        raise err
+    return res    
+
+async def get_info(ctx:Context, api:PcrClientApi, game_id):
+    if api.is_async_start is False:
+        await api.start_async_session()
+    try:
+        res = await api.query_target_user_game_id_async(game_id)
+    except ApiException as api_exception:
+        if api_exception.code is None or api_exception.code != "214":
+            await ctx.send(str.format("code={} data={}", api_exception.code, api_exception.message))
+            return
+        await ctx.send("伺服器需要重新登入, 開始重新登入")
+        await api.login_async()
+        res = await _re_get_info(ctx, api, game_id)
     except Exception as err:
         raise err
     return res
 
 def generate_embed_result(res:PcrClientInfo):
-    embed = discord.Embed(title=str.format("[玩家] {}", res.user_name), description=res.user_id, color=0x28ddb0)
-    embed.add_field(name="戰鬥競技場排名 (1v1)", value=res.pvp1_rank, inline=True)
-    embed.add_field(name="分區", value=res.pvp1_group, inline=True)
-    embed.add_field(name = chr(173), value = chr(173))
-    embed.add_field(name="公主競技場排名 (3v3)", value=res.pvp3_rank, inline=True)
-    embed.add_field(name="分區", value=res.pvp3_group, inline=True)
-    embed.add_field(name="閒置時間", value=hour_min_format(res.last_login_idle_seconds), inline=False)
-    embed.add_field(name="上次登入時間", value=str(datetime.datetime.fromtimestamp(res.last_login_time)), inline=False)
+    title_text  = f"[玩家] {res.user_name} @{hour_min_format(res.last_login_idle_seconds)}" 
+    title_description = f"`遊戲ID: {res.user_id}`"
+    embed = discord.Embed(title=title_text, description=title_description, color=0x28ddb0)
+    
+    rank_title = f"戰鬥/公主競技場 [{res.pvp1_group}區, {res.pvp3_group}區]"
+    rank_text  = f"`{res.pvp1_rank}名 / {res.pvp3_rank}名`"
+    embed.add_field(name=rank_title, value=rank_text, inline=False)
+    # embed.add_field(name="分區", value=res.pvp1_group, inline=True)
+    # embed.add_field(name = chr(173), value = chr(173))
+    # embed.add_field(name="公主競技場排名 (3v3)", value=res.pvp3_rank, inline=True)
+    # embed.add_field(name="分區", value=res.pvp3_group, inline=True)
+    # embed.add_field(name="閒置時間", value=hour_min_format(res.last_login_idle_seconds), inline=False)
+    # embed.add_field(name="上次登入時間", value=str(datetime.datetime.fromtimestamp(res.last_login_time)), inline=False)
     return embed
 
 
