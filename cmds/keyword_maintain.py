@@ -21,12 +21,23 @@ if type(prefix) is list:
     
 help_message = \
 """
-[幫助]                  {0}keyword help
-[檢視關鍵字集合]        {0}keyword show {{關鍵字}}
-[新增關鍵字至集合]      {0}keyword add {{關鍵字}} {{內容}}
-[刪除關鍵字之一  ]      {0}keyword del {{關鍵字}}
-[新增至集合並且tag自己] {0}keyword add-tag-me {{關鍵字}} {{內容}}
-[新增至集合並且tag別人] {0}keyword add-tag {{關鍵字}} {{discord-id}} {{內容}}
+[幫助]                  
+    {0}keyword help
+    
+[檢視關鍵字集合]        
+    {0}keyword show {{關鍵字}}
+    
+[新增關鍵字至集合]      
+    {0}keyword add {{關鍵字}} {{內容}}
+    
+[刪除關鍵字之一  ]      
+    {0}keyword del {{關鍵字}}
+    
+[新增至集合並且tag自己] 
+    {0}keyword add-tag-me {{關鍵字}} {{內容}}
+    
+[新增至集合並且tag別人] 
+    {0}keyword add-tag {{關鍵字}} {{discord-id}} {{內容}}
 """
 
 admin_help_message = \
