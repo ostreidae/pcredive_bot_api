@@ -109,7 +109,9 @@ class KeywordMaintain(Cog_Extension):
             
             content = res.content.split('\n')
             if res.tag_user_id > 0:
-                await message.channel.send(f"<@{res.tag_user_id}>\n{content[0]}")
+                await message.channel.send(f"<@{res.tag_user_id}>")
+                if len(content[0]) > 0:
+                    await message.channel.send(content[0])
             else:
                 await message.channel.send(res.content[0])
             if len(content) > 1:
