@@ -106,10 +106,16 @@ class KeywordMaintain(Cog_Extension):
             res : KeyWordModel = self.controller.get_keyword(content)
             if res is None or res == "":
                 return
+            
+            content = res.content.split('\n')
             if res.tag_user_id > 0:
-                await message.channel.send(f"<@{res.tag_user_id}>\n{res.content}")
+                await message.channel.send(f"<@{res.tag_user_id}>\n{content[0]}")
             else:
-                await message.channel.send(res.content)
+                await message.channel.send(res.content[0])
+            if len(content) > 1:
+                for c in content[1:]:
+                    if len(c) > 0:
+                        await message.channel.send(c)
             return 0
             
         async with self.lock:
