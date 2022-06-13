@@ -11,6 +11,10 @@ def read_file(path_name):
     with open(path_name, "r") as f:
         return f.read()
 
+def to_lower_keys(dic):
+    keys = [ k.lower() for k in dic.keys() ]
+    return dict(zip(keys, list(dic.values())))
+
 class KeyWordController:
     def __init__(self, config_file_path="keywordconfig.json",
                      prefix_filter=set("!@#$%^&*()[]\\/?><\"';:{}|-_=+~`"),
@@ -23,10 +27,9 @@ class KeyWordController:
         else:
             content = read_file(config_file_path)
             self.setting = cattrs.structure(json.loads(content), KeyWordSetting)
-            if type(self.setting.key_mapping_dict) is dict:
-                self.setting.key_mapping_dict = defaultdict(list, self.setting.key_mapping_dict)
+            self.setting.key_mapping_dict = to_lower_keys(self.setting.key_mapping_dict)
+            self.setting.key_mapping_dict = defaultdict(list, self.setting.key_mapping_dict)
                 
-            
         self.user_count = self._count_user()
     
     @property
@@ -42,7 +45,9 @@ class KeyWordController:
         
     def backup_dump(self):
         with open(self.path+".bak", "w") as f:
-            f.write(json.dumps(cattrs.unstructure(self.setting, indent=4)))
+            f.write(json.dumps(cattrs.unstructure(self.setting), indent=4))
+        with open(self.path, "w") as f:
+            f.write(json.dumps(cattrs.unstructure(self.setting), indent=4))
             
     
     def _count_user(self) -> DefaultDict[int, int]:
@@ -53,10 +58,12 @@ class KeyWordController:
                     count_dict[model.set_user_id] += 1
         return count_dict
     
-    def get_keyword_alllist(self, keyword):
+    def get_keyword_alllist(self, keyword:str):
+        keyword = keyword.lower()
         return self.setting.key_mapping_dict.get(keyword)
     
     def get_keyword(self, keyword:str, use_random=True, fetch_index=-1):
+        keyword = keyword.lower()
         res = self.setting.key_mapping_dict.get(keyword)
         if res is None:
             return
@@ -83,6 +90,7 @@ class KeyWordController:
         elif self.user_count[user_id] > self.setting.limit_user_per_keyword and user_id not in self.maintainer_ids:
             return f"此使用者設定關鍵字超過 {self.setting.limit_user_per_keyword}, 目前只有管理者無上限"
         
+        keyword_match = keyword_match.lower()
         if user_id not in self.maintainer_ids:
             if tag_user_id > 0 and user_id != tag_user_id:
                 return "限制維護人員可以 tag 其他人"
@@ -101,6 +109,7 @@ class KeyWordController:
         
     
     def del_keyword(self, keyword:str, index:int, user_id:int):
+        keyword = keyword.lower()
         target = self.setting.key_mapping_dict.get(keyword)
         if target is None:
             return "找不到關鍵字"
