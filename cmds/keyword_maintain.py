@@ -76,6 +76,15 @@ class KeywordMaintain(Cog_Extension):
         self.user_waiting_dict = dict()
         bot.event(self.on_message)
     
+    def _show_all_keys(self):
+        res = list(self.controller.setting.key_mapping_dict.keys())
+        if len(res) == 0:
+            return "目前無關鍵字集合"
+        else:
+            all_res = ", ".join(res)
+            return f"目前可使用的關鍵字:\n```{all_res}```"
+    
+    
     def _show_all_content(self, keyword):
         res : List[KeyWordModel] = self.controller.get_keyword_alllist(keyword)
         if res is None or (type(res) is list and len(res) == 0):
@@ -182,6 +191,9 @@ class KeywordMaintain(Cog_Extension):
                     await ctx.send(f"關鍵字 {keyword} 集合擴增成功")
                 
             elif command == "del" or command == "show":
+                if len(arr) == 2 and command == "show": 
+                    await ctx.send(self._show_all_keys())
+                    return
                 if len(arr) <= 2:
                     await self._get_help_message(ctx)
                     return
