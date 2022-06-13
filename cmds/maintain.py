@@ -101,9 +101,11 @@ class BackendMaintain(Cog_Extension):
         return True
     
     async def reload(self, ctx):
-        extension = "maintain"
+        #extension = "maintain"
         pid = self.stop_process()
-        self.bot.reload_extension(f'cmds.{extension}')
+        for filename in os.listdir('./cmds'):
+            if filename.endswith('.py'):
+                self.bot.load_extension(f'cmds.{filename[:-3]}')
         if pid is None:
             await ctx.send(f'維護程式重新加載完成')
         else:
