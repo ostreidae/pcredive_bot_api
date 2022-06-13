@@ -26,7 +26,7 @@ help_message = \
 [新增關鍵字至集合]      {0}keyword add {{關鍵字}} {{內容}}
 [刪除關鍵字之一  ]      {0}keyword del {{關鍵字}}
 [新增至集合並且tag自己] {0}keyword add-tag-me {{關鍵字}} {{內容}}
-[新增至集合並且tag別人] {0}keyword add-tag {{discord-id}} {{關鍵字}} {{內容}}
+[新增至集合並且tag別人] {0}keyword add-tag {{關鍵字}} {{discord-id}} {{內容}}
 """
 
 admin_help_message = \
@@ -188,8 +188,8 @@ class KeywordMaintain(Cog_Extension):
                 if len(arr) < 4:
                     await self._get_help_message(ctx)
                     return
-                tag_user_id = as_int(arr[2]) 
-                keyword = arr[3]
+                tag_user_id = as_int(arr[3]) 
+                keyword = arr[2]
                 content = " ".join(arr[4:])
                 if tag_user_id == -1:
                     await ctx.send("discord id 不正確")
