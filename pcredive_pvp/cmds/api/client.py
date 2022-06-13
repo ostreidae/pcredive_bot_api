@@ -347,25 +347,12 @@ class PcrClientApi:
         
     async def login_async(self):
         await self.api.login_async()
-        
-    def query_target_user_game_id(self, game_id:int) -> PcrClientInfo:
-        last_state = self._get_from_cache(game_id)
-        if last_state is not None:
-            return last_state
-        try:
-            res = self.api.callapi('/profile/get_profile', {'target_viewer_id': int(game_id)})
-            ts  = int(time.time()*1e3)
-            res = PcrClientInfo.from_dict(res)
-        except Exception as err:
-            self._process_except(game_id, err)
             
-        self.cache_state[game_id] = (res, ts)
-        return res
-    
-    async def query_target_user_game_id_async(self, game_id:int):
-        last_state = self._get_from_cache(game_id)
-        if last_state is not None:
-            return last_state
+    async def query_target_user_game_id_async(self, game_id:int, use_cache=True):
+        if use_cache:
+            last_state = self._get_from_cache(game_id)
+            if last_state is not None:
+                return last_state
         try:
             res = await self.api.callapi('/profile/get_profile', {'target_viewer_id': int(game_id)}, use_async=True)
             ts  = int(time.time()*1e3)

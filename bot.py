@@ -22,11 +22,6 @@ owner_ids: 擁有者ID
 bot = commands.Bot(command_prefix= jdata['Prefix'], 
 										 owner_ids= jdata['Owner_id'])
 
-# Bot完成啟動後事件
-@bot.event
-async def on_ready():
-	print(">> Bot is online <<")
-
 # 載入cmds資料夾內所有cog
 for filename in os.listdir('./cmds'):
 	if filename.endswith('.py'):

@@ -143,7 +143,6 @@ def generate_embed_result(res:PcrClientInfo):
 class PcReDiveGameProfile(Cog_Extension):
     def __init__(self, bot):
         super().__init__(bot)
-        bot.event(self.on_message)
         bot.remove_command('help')
         self.config_dict = config
         self.api = PcrClientApi(configuration_dict=self.config_dict)
@@ -156,14 +155,6 @@ class PcReDiveGameProfile(Cog_Extension):
         res = await get_info(ctx, self.api, game_id)
         if res is not None:
             await ctx.send(embed=generate_embed_result(res))
-    
-    async def on_message(self, message):
-        content = message.content
-        if content == "GG":
-            await message.channel.send("ㄐㄐ")
-            await message.channel.send("https://c.tenor.com/3OAB3vvodXIAAAAj/kyaru.gif")
-        else:
-            await self.bot.process_commands(message)
             
 
     @commands.command()

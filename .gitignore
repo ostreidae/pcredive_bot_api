@@ -8,3 +8,5 @@ __pycache__
 shared_prefs/
 headers.json
 configuration.json
+keywordconfig.json
+keywordconfig.json.bak

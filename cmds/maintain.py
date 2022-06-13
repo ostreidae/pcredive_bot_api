@@ -22,7 +22,10 @@ help_message = \
   [綁定Discord Id]  {0}bind  {{自己的遊戲id}}
   [查詢自己的 Id]   {0}me 
   [查詢玩家Id]      {0}query {{遊戲id}}
-  
+
+#【其他功能】
+  [新增關鍵字]      {0}keyword
+
 #【維護功能】
   [從github更新版本]  {0}update
   [重新啟動]          {0}restart
@@ -77,7 +80,7 @@ class BackendMaintain(Cog_Extension):
         bot.remove_command('help')
         self.lock = threading.Lock()
         self.process = None
-        self.restart_process()
+        #self.restart_process()
         
     def restart_process(self):
         with self.lock:
@@ -229,8 +232,17 @@ class BackendMaintain(Cog_Extension):
             return
         await self.reload(ctx)
 
-
-def setup(bot):
+from discord.ext import commands
+def setup(bot : commands.Bot):
     setattr(Errors, 'None_error', process_error)
     bot.add_cog(BackendMaintain(bot))
+    
+    async def on_ready():
+        # channel = await bot.fetch_channel(985558940400123914)
+        # message = await channel.fetch_message(985558965410734182)
+        # await message.edit(content="Hello World")
+        # print(message)
+        print(">> Bot is online inner <<")
+    bot.event(on_ready)
+
     
