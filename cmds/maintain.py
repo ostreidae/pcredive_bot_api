@@ -105,7 +105,10 @@ class BackendMaintain(Cog_Extension):
         pid = self.stop_process()
         for filename in os.listdir('./cmds'):
             if filename.endswith('.py'):
-                self.bot.load_extension(f'cmds.{filename[:-3]}')
+                try:
+                    self.bot.load_extension(f'cmds.{filename[:-3]}')
+                except:
+                    pass
         if pid is None:
             await ctx.send(f'維護程式重新加載完成')
         else:
