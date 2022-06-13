@@ -106,7 +106,7 @@ class BackendMaintain(Cog_Extension):
         for filename in os.listdir('./cmds'):
             if filename.endswith('.py'):
                 try:
-                    self.bot.load_extension(f'cmds.{filename[:-3]}')
+                    self.bot.reload_extension(f'cmds.{filename[:-3]}')
                 except:
                     pass
         if pid is None:
