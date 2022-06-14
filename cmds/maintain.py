@@ -74,13 +74,33 @@ def submit_task(coro:asyncio.coroutine, done_callback:callable):
         task.add_done_callback(done_callback)
     return task
 
+def reload_local_packages():
+    import os
+    import importlib
+    import sys
+    import pathlib
+
+    root = pathlib.Path(os.getcwd())
+    ls = list(sys.modules.values())
+    ls = [ m for m in ls 
+            if hasattr(m, "__file__") and
+                type(m.__file__) is str and
+                pathlib.Path(m.__file__).is_relative_to(root) 
+            ]
+    ls = [m.__name__ for m in ls if len(getattr(m, "__name__", "")) > 0]
+    for mod_name in ls:
+        if mod_name in sys.modules:
+            del sys.modules[mod_name]
+        mod = importlib.import_module(mod_name)
+        importlib.reload(mod)
+
 class BackendMaintain(Cog_Extension):
     def __init__(self, bot):
         super().__init__(bot)
         bot.remove_command('help')
         self.lock = threading.Lock()
         self.process = None
-        self.restart_process()
+        #self.restart_process()
         
     def restart_process(self):
         with self.lock:
@@ -102,6 +122,10 @@ class BackendMaintain(Cog_Extension):
     
     async def reload(self, ctx):
         #extension = "maintain"
+        try:
+            reload_local_packages()
+        except:
+            pass
         pid = self.stop_process()
         for filename in os.listdir('./cmds'):
             if filename.endswith('.py'):
