@@ -38,6 +38,8 @@ help_message = \
     
 [新增至集合並且tag別人] 
     {0}keyword add-tag {{關鍵字}} {{discord-id}} {{內容}}
+    
+p.s. {{關鍵字}}可用 <space> 當作空白字元
 """
 
 admin_help_message = \
@@ -133,7 +135,7 @@ class KeywordMaintain(Cog_Extension):
                 if len(content[0]) > 0:
                     await message.channel.send(content[0])
             else:
-                await message.channel.send(res.content[0])
+                await message.channel.send(content[0])
             if len(content) > 1:
                 for c in content[1:]:
                     if len(c) > 0:
@@ -150,6 +152,7 @@ class KeywordMaintain(Cog_Extension):
                     await message.channel.send("索引格式錯誤")
                 res = self.controller.del_keyword(keyword, index, user_id)
                 if res == "" or res is None:
+                    keyword = keyword.lower().replace("<space>", " ")
                     await message.channel.send(f"關鍵字 {keyword} 集合已刪除索引 {index}")
                 else:
                     await message.channel.send(res)
@@ -165,6 +168,7 @@ class KeywordMaintain(Cog_Extension):
             channel_id : int = message.channel.id
             
             arr = message_content.split(' ')
+            arr = list(filter(lambda x : len(x) > 0, arr))
             if len(arr) <= 1:
                 await self._get_help_message(ctx)
                 return
@@ -188,6 +192,7 @@ class KeywordMaintain(Cog_Extension):
                     await ctx.send(res)
                     return
                 else:
+                    keyword = keyword.lower().replace("<space>", " ")
                     await ctx.send(f"關鍵字 {keyword} 集合擴增成功")
                 
             elif command == "del" or command == "show":
@@ -223,6 +228,7 @@ class KeywordMaintain(Cog_Extension):
                 if res != "":
                     await ctx.send(res)
                 else:
+                    keyword = keyword.lower().replace("<space>", " ")
                     await ctx.send(f"關鍵字 {keyword}  集合擴增成功")
             else:
                 await self._get_help_message(ctx)

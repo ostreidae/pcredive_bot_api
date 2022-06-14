@@ -60,10 +60,12 @@ class KeyWordController:
     
     def get_keyword_alllist(self, keyword:str):
         keyword = keyword.lower()
+        keyword = keyword.replace("<space>", " ")
         return self.setting.key_mapping_dict.get(keyword)
     
     def get_keyword(self, keyword:str, use_random=True, fetch_index=-1):
         keyword = keyword.lower()
+        keyword = keyword.replace("<space>", " ")
         res = self.setting.key_mapping_dict.get(keyword)
         if res is None:
             return
@@ -91,6 +93,7 @@ class KeyWordController:
             return f"此使用者設定關鍵字超過 {self.setting.limit_user_per_keyword}, 目前只有管理者無上限"
         
         keyword_match = keyword_match.lower()
+        keyword_match = keyword_match.replace("<space>", " ")
         if user_id not in self.maintainer_ids:
             if tag_user_id > 0 and user_id != tag_user_id:
                 return "限制維護人員可以 tag 其他人"
@@ -110,6 +113,7 @@ class KeyWordController:
     
     def del_keyword(self, keyword:str, index:int, user_id:int):
         keyword = keyword.lower()
+        keyword = keyword.replace("<space>", " ")
         target = self.setting.key_mapping_dict.get(keyword)
         if target is None:
             return "找不到關鍵字"
