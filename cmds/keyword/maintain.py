@@ -12,7 +12,7 @@ def read_file(path_name):
         return f.read()
 
 def to_lower_keys(dic):
-    keys = [ k.lower() for k in dic.keys() ]
+    keys = [ k.lower().replace("<space>", " ") for k in dic.keys() ]
     return dict(zip(keys, list(dic.values())))
 
 class KeyWordController:
