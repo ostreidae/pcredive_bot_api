@@ -116,6 +116,8 @@ class KeywordMaintain(Cog_Extension):
         ret = await self._on_message(message)
         if ret is None:
             await self.bot.process_commands(message)
+        else:
+            await message.channel.send("done")
     
     async def _on_message(self, message:discord.Message):
         content : str = message.content
