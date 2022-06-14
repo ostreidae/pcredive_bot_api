@@ -224,6 +224,8 @@ class KeywordMaintain(Cog_Extension):
                     await ctx.send(res)
                 else:
                     await ctx.send(f"關鍵字 {keyword}  集合擴增成功")
+            else:
+                await self._get_help_message(ctx)
         
     
 def setup(bot : commands.Bot):
