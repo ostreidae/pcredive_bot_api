@@ -92,7 +92,7 @@ class KeyWordController:
                  return f"限制關鍵字長度{self.setting.max_keyword_length}字元, \
                           內容長度{self.setting.max_content_length}字元"
         elif keyword_match[0] in self.prefix_filter or \
-             (all([ c.isdigit() for c in keyword_match]) and len(keyword_match) < 3 ):
+             (all([ c.isdigit() for c in keyword_match]) and keyword_match[0]!='0' and len(keyword_match) < 3 ):
             return "請避免特殊字元開頭"
         elif self.user_count[user_id] >= self.setting.limit_user_per_keyword and user_id not in self.maintainer_ids:
             return f"此使用者設定關鍵字超過 {self.setting.limit_user_per_keyword}, 目前只有管理者無上限"
