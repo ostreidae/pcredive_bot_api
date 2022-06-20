@@ -83,8 +83,7 @@ class KeyWordController:
     def add_new_keyword(self, keyword_match:str, content:str, user_id:int, tag_user_id:int=-1):
         if type(keyword_match) is not str or \
             len(keyword_match) < 1 or \
-            type(content) is not str or\
-            len(content) < 1:
+            type(content) is not str:
             return "格式錯誤"
         elif len(keyword_match) > self.setting.max_keyword_length or \
              len(content) > self.setting.max_content_length:
