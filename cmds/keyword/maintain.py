@@ -81,6 +81,8 @@ class KeyWordController:
             return res[fetch_index]
                     
     def add_new_keyword(self, keyword_match:str, content:str, user_id:int, tag_user_id:int=-1):
+        if type(content) is str:
+            content = content.replace("<<<null>>>","")
         if type(keyword_match) is not str or \
             len(keyword_match) < 1 or \
             type(content) is not str:
