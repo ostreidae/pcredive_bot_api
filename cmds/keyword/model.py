@@ -11,7 +11,7 @@ class KeyWordModel:
     
 @attr.s
 class KeyWordSetting:
-    key_mapping_dict : DefaultDict[str, List[KeyWordModel]] = attr.ib(default=attr.Factory(lambda : defaultdict(list)))
+    key_mapping_dict : DefaultDict[str, List[KeyWordModel]] = attr.ib(default=attr.Factory(lambda : defaultdict(list)), repr=False)
     
     max_keyword_length : int = attr.ib(default=20)
     max_content_length : int = attr.ib(default=512)

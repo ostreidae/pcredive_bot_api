@@ -1,4 +1,6 @@
 import asyncio
+import datetime
+import io
 import threading
 import time
 from typing import List
@@ -6,6 +8,7 @@ from discord.ext import commands
 import discord
 from discord.ext.commands.errors import CommandNotFound
 from cmds.keyword.model import KeyWordModel
+from common import cattrs
 from core.errors import Errors
 from .keyword.maintain import KeyWordController
 from core.classes import Cog_Extension
@@ -46,6 +49,9 @@ admin_help_message = \
 """
 #【維護功能】
     [備份檔案] {0}keyword backup
+    [顯示參數] {0}keyword pshow
+    [修改參數] {0}keyword pset {{參數名稱}} {{數值}}
+    [刪除範圍] {0}keyword pdel {{關鍵字}} {{index_start}} {{index_end}}
 """
 admin_help_message = str.format(admin_help_message, prefix)
 help_message = str.format(help_message, prefix)
@@ -105,18 +111,28 @@ class KeywordMaintain(Cog_Extension):
             await ctx.send(f"```{help_message}\n{admin_help_message}```") 
         else:
             await ctx.send(f"```{help_message}```") 
-            
-        
     
-    def generate_del_waiting_request(self, user_id, channel_id, keyword):
+    def _get_setting_json_str(self):
+        dic : dict = cattrs.unstructure(self.controller.setting)
+        dic.pop("key_mapping_dict", None)
+        return json.dumps(dic, indent=4)
+    
+    def generate_del_waiting_request(self, user_id, channel_id, keyword, message_id):
         t = time.time()
-        self.user_waiting_dict[(user_id, channel_id)] = (user_id, channel_id, keyword, t)
+        self.user_waiting_dict[(user_id, channel_id)] = (user_id, channel_id, keyword, t, message_id)
         
     async def on_message(self, message:discord.Message):
         ret = await self._on_message(message)
         if ret is None:
             await self.bot.process_commands(message)
-    
+            
+    async def _del_message(self, channel, mid):
+        try:
+            msg = await channel.fetch_message(mid)
+            await msg.delete()
+        except:
+            pass
+        
     async def _on_message(self, message:discord.Message):
         content : str = message.content
         user_id    : int = message.author.id
@@ -131,9 +147,14 @@ class KeywordMaintain(Cog_Extension):
             
             content = res.content.split('\n')
             if res.tag_user_id > 0:
-                await message.channel.send(f"<@{res.tag_user_id}>")
-                if len(content[0]) > 0:
-                    await message.channel.send(content[0])
+                if len(content) == 0:
+                    await message.channel.send(f"<@{res.tag_user_id}>")
+                elif len(content) >= 1:
+                    if "http" in content[0]:
+                        await message.channel.send(f"<@{res.tag_user_id}>")
+                        await message.channel.send(content[0])
+                    else:
+                        await message.channel.send(f"<@{res.tag_user_id}> {content[0]}")
             else:
                 await message.channel.send(content[0])
             if len(content) > 1:
@@ -143,7 +164,8 @@ class KeywordMaintain(Cog_Extension):
             return 0
             
         async with self.lock:
-            user_id, channel_id, keyword, t = self.user_waiting_dict.pop((user_id, channel_id))
+            user_id, channel_id, keyword, t, message_id = self.user_waiting_dict.pop((user_id, channel_id))
+            await self._del_message(message.channel, message_id)
             if time.time() - t > 60:
                 return 0
             if len(content) <= 3:
@@ -174,10 +196,80 @@ class KeywordMaintain(Cog_Extension):
                 return
             
             command = arr[1]
-            if command == "backup":
+            if command == "pdel":
+                if user_id not in maintainer_id:
+                    await ctx.send("無權限")
+                    return
+                if len(arr) <= 4:
+                    await self._get_help_message(ctx)
+                    return
+                keyword = arr[2]
+                pstart = as_int(arr[3])
+                pend   = as_int(arr[4])
+                if not(keyword in self.controller.setting.key_mapping_dict):
+                    await ctx.send("關鍵字不存在")
+                    return
+                res = self.controller.del_keyword_multiple(keyword, pstart, pend)
+                if res != "":
+                    await ctx.send(res)
+                    return
+                keyword = keyword.lower().replace("<space>", " ")
+                await ctx.send(f"關鍵字 {keyword} 刪除成功 {pstart} -- {pend}")
+                return
+            if command == "padd":
+                if user_id not in maintainer_id:
+                    await ctx.send("無權限")
+                    return
+                if len(arr) <= 5:
+                    await self._get_help_message(ctx)
+                    return
+                mention_id = as_int(arr[2])
+                keyword = arr[3]
+                content_prefix = arr[4]
+                content = " ".join(arr[5:])
+                try:
+                    content_arr = json.loads(content)
+                    if type(content_arr) is not list:
+                        return
+                    for c in content_arr:
+                        if content_prefix == "<null>":
+                            r = self.controller.add_new_keyword(keyword, c, user_id, mention_id)
+                            print(r)
+                        else:
+                            self.controller.add_new_keyword(keyword, f"{content_prefix}\n{c}", user_id, mention_id)
+                        
+                    keyword = keyword.lower().replace("<space>", " ")
+                    await ctx.send(f"關鍵字 {keyword} 集合擴增成功, 數量 : {len(content_arr)}")
+                except:
+                    pass
+                return
+            if command == "pshow":
+                await ctx.send(f"```\n{self._get_setting_json_str()}\n```")
+                return
+            if command == "pset":
+                if user_id not in maintainer_id:
+                    await ctx.send("無權限")
+                    return
+                if len(arr) != 4:
+                    await ctx.send("格式錯誤")
+                    return
+                key = arr[2]
+                val = as_int(arr[3])
+                if hasattr(self.controller.setting, key) == False or val < 0:
+                    await ctx.send("設定參數錯誤")
+                else:
+                    setattr(self.controller.setting, key, val) 
+                    self.controller.backup_dump()
+                    await ctx.send("設定完成")
+                    await ctx.send(f"```\n{self._get_setting_json_str()}\n```")
+                return
+            if command == "backup":                
                 if user_id in maintainer_id:
+                    f = io.StringIO(json.dumps(self.controller.unstructure_json_dic_dump, indent=4))
                     self.controller.backup_dump()
                     await ctx.send("備份完成")
+                    await ctx.send(file=discord.File(f, filename=f"keyword_setting-{datetime.datetime.now().isoformat()}.json")) 
+                return
             if command == "add" or command == "add-tag-me":
                 if len(arr) <= 3:
                     await self._get_help_message(ctx)
@@ -208,8 +300,8 @@ class KeywordMaintain(Cog_Extension):
                     await ctx.send("查無關鍵字")
                 else:
                     if command == "del":
-                        await ctx.send(f"請在60秒內選擇其中一個索引:\n{target}")
-                        self.generate_del_waiting_request(user_id, channel_id, keyword)
+                        msg = await ctx.send(f"請在60秒內選擇其中一個索引:\n{target}")
+                        self.generate_del_waiting_request(user_id, channel_id, keyword, msg.id)
                     else:
                         await ctx.send(target)
                     

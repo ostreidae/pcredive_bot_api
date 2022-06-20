@@ -51,7 +51,7 @@ help_message = str.format(help_message, prefix)
 url = "https://raw.githubusercontent.com/ostreidae/pcredive_bot_api/main/version"
 download_url = "https://github.com/ostreidae/pcredive_bot_api/archive/refs/heads/main.zip"
 maintainer_id = jdata.get("Owner_id")
-
+enable_subprocess = jdata.get("enable_subprocess", True)
 
 async def send_another(channel):
     await channel.send("Hello World")
@@ -100,7 +100,8 @@ class BackendMaintain(Cog_Extension):
         bot.remove_command('help')
         self.lock = threading.Lock()
         self.process = None
-        self.restart_process()
+        if enable_subprocess:
+            self.restart_process()
         
     def restart_process(self):
         with self.lock:

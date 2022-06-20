@@ -36,6 +36,10 @@ class KeyWordController:
     def max_keyword_length(self):
         return self.setting.max_keyword_length
     
+    @property
+    def unstructure_json_dic_dump(self):
+        return cattrs.unstructure(self.setting)
+    
     def _dump(self):
         try:
             with open(self.path, "w") as f:
@@ -89,7 +93,7 @@ class KeyWordController:
         elif keyword_match[0] in self.prefix_filter or \
              (keyword_match[0].isdigit() and len(keyword_match) < 3 ):
             return "請避免特殊字元開頭"
-        elif self.user_count[user_id] > self.setting.limit_user_per_keyword and user_id not in self.maintainer_ids:
+        elif self.user_count[user_id] >= self.setting.limit_user_per_keyword and user_id not in self.maintainer_ids:
             return f"此使用者設定關鍵字超過 {self.setting.limit_user_per_keyword}, 目前只有管理者無上限"
         
         keyword_match = keyword_match.lower()
@@ -100,13 +104,31 @@ class KeyWordController:
         if user_id in self.maintainer_ids:
             user_id = -1
         key_lists = self.setting.key_mapping_dict[keyword_match]
-        if len(key_lists) > self.setting.limit_content_pool_size_per_keyword:
+        if len(key_lists) >= self.setting.limit_content_pool_size_per_keyword:
             return f"限制每個關鍵字選擇數量為 {self.setting.limit_content_pool_size_per_keyword}"
         key_lists.append(KeyWordModel(
             content=content,
             set_user_id=user_id,
             tag_user_id=tag_user_id
         ))
+        self._dump()
+        return ""
+        
+    def del_keyword_multiple(self, keyword:str, i1:int, i2:int):
+        keyword = keyword.lower()
+        keyword = keyword.replace("<space>", " ")
+        target = self.setting.key_mapping_dict.get(keyword)
+        if target is None:
+            return "找不到關鍵字"
+        if i1 >= len(target) or i1 < 0:
+            return "索引不正確"
+        if i2+1 > len(target) or i2 < 0:
+            return "索引不正確"
+        if i1 > i2:
+            return "索引不正確"
+        del target[i1:i2+1]
+        if len(target) == 0:
+            self.setting.key_mapping_dict.pop(keyword)
         self._dump()
         return ""
         
