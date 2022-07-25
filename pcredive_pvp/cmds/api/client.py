@@ -25,8 +25,8 @@ from .utils import decryptxml
 def get_headers():
     app_ver = get_ver()
     default_headers = {
-        'Accept-Encoding' : 'gzip',
-        'User-Agent' : 'Dalvik/2.1.0 (Linux, U, Android 5.1.1, PCRT00 Build/LMY48Z)',
+        'Accept-Encoding' : 'gzip, deflate',
+        'User-Agent' : 'Dalvik/2.1.0 (Linux; U; Android 5.1.1; SM-G973N Build/PPR1.190810.011)',
         'Content-Type': 'application/octet-stream',
         'Expect': '100-continue',
         'X-Unity-Version' : '2018.4.21f1',
@@ -34,25 +34,34 @@ def get_headers():
         'BATTLE-LOGIC-VERSION' : '4',
         'BUNDLE-VER' : '',
         'DEVICE' : '2',
-        'DEVICE-ID' : '7b1703a5d9b394e24051d7a5d4818f17',
-        'DEVICE-NAME' : 'OPPO PCRT00',
-        'GRAPHICS-DEVICE-NAME' : 'Adreno (TM) 640',
-        'IP-ADDRESS' : '10.0.2.15',
+        'DEVICE-ID' : 'b0a17db90748631b981f6a6cb6e3b766',
+        'DEVICE-NAME' : 'samsung SM-G973N',
+        'GRAPHICS-DEVICE-NAME' : 'Adreno (TM) 630',
+        'IP-ADDRESS' : '172.16.7.15',
         'KEYCHAIN' : '',
         'LOCALE' : 'Jpn',
-        'PLATFORM-OS-VERSION' : 'Android OS 5.1.1 / API-22 (LMY48Z/rel.se.infra.20200612.100533)',
+        'PLATFORM-OS-VERSION' : 'Android OS 5.1.1 / API-22 (PPR1.190810.011/500200819)',
         'REGION-CODE' : '',
-        'RES-VER' : '00017004'
+        'RES-VER' : '00070014'
     }
     return default_headers
 
 # 获取版本号
 def get_ver():
-    app_url = 'https://apkimage.io/?q=tw.sonet.princessconnect'
+    import re
+    app_url = 'https://play.google.com/store/apps/details?id=tw.sonet.princessconnect&hl=zh_TW&gl=US'
     app_res = requests.get(app_url, timeout=15)
-    soup = BeautifulSoup(app_res.text, 'lxml')
-    ver_tmp = soup.find('span', text = re.compile(r'Version：(\d\.\d\.\d)'))
-    app_ver = ver_tmp.text.replace('Version：', '')
+    pattern = re.compile(r'\[\[\[\"\d+\.\d+\.\d+')
+    
+    #app_url = 'https://apkimage.io/?q=tw.sonet.princessconnect'
+    app_res = requests.get(app_url, timeout=15)
+    arr = pattern.findall(app_res.text)
+    if arr is None or len(arr) == 0:
+        return "3.4.0"
+    app_ver = arr[0].split("\"")[1]
+    #soup = BeautifulSoup(app_res.text, 'lxml')
+    #ver_tmp = soup.find('span', text = re.compile(r'Version：(\d\.\d\.\d)'))
+    #app_ver = ver_tmp.text.replace('Version：', '')
     return str(app_ver)
 
 def update_ver(root_dir=''):
@@ -79,13 +88,14 @@ class pcrclient:
     def _makemd5(str) -> str:
         return md5((str + 'r!I@nt8e5i=').encode('utf8')).hexdigest()
     
-    def __init__(self, udid, short_udid, viewer_id, platform, proxy, root_dir=''):
+    def __init__(self, udid, short_udid, viewer_id, platform, proxy, root_dir='', last_sid=''):
         
         self.viewer_id = viewer_id
         self.short_udid = short_udid
         self.udid = udid
         self.headers = {}
         self.proxy = proxy
+        self.last_sid = last_sid
         
 
         header_path = os.path.join(root_dir, 'headers.json')
@@ -99,7 +109,7 @@ class pcrclient:
         self.apiroot = f'https://api{"" if platform == "1" else platform}-pc.so-net.tw'
         self.headers['platform'] = '1'
 
-        self.shouldLogin = True
+        self.shouldLogin = last_sid == ''
         self.last_login_time = 0
         self.login_lock = threading.Lock()
         self.login_async_lock = None
@@ -153,6 +163,7 @@ class pcrclient:
 
         packed, crypted_data = self.pack(request, key)
         headers = dict(self.headers)
+        headers['SID'] = headers['SID'] if self.last_sid == "" else self._makemd5(self.last_sid)
         headers['PARAM'] = sha1((self.udid + apiurl + b64encode(packed).decode('utf8') + str(self.viewer_id)).encode('utf8')).hexdigest()
         headers['SHORT-UDID'] = pcrclient._encode(self.short_udid)
         return crypted_data, headers
@@ -205,9 +216,13 @@ class pcrclient:
 
         if 'required_res_ver' in data_headers:
             self.headers['RES-VER'] = data_headers['required_res_ver']
+        if 'sid' in data_headers:
+            self.last_sid = data_headers['sid']
+            print(self.last_sid)
 
         data = response['data']
         if not noerr and 'server_error' in data:
+            self.last_sid = ''
             data = data['server_error']
             code = data_headers['result_code']
             print(f'pcrclient: {apiurl} api failed code = {code}, {data}')
@@ -242,7 +257,7 @@ def get_logger(logger=None):
         return logging.getLogger()
     return logger
 
-def get_pcr_client(root_dir=''):
+def get_pcr_client(root_dir='', last_sid=''):
     proxy_info = {
         "proxy": {
         
@@ -256,7 +271,8 @@ def get_pcr_client(root_dir=''):
                            acinfo_3cx['VIEWER_ID'], 
                            acinfo_3cx['TW_SERVER_ID'], 
                            proxy_info['proxy'], 
-                           root_dir=root_dir)
+                           root_dir=root_dir,
+                           last_sid=last_sid)
     return client_3cx
  
  
@@ -297,10 +313,11 @@ class PcrClientInfo:
         
     
 class PcrClientApi:
-    def __init__(self, root_dir='', logger=None, configuration_dict:dict=dict()):
+    def __init__(self, root_dir='', logger=None, configuration_dict:dict=dict(), last_sid=''):
         self.logger = get_logger(logger)
-        self.api = get_pcr_client(root_dir)
-        self.api.login()
+        self.api = get_pcr_client(root_dir, last_sid=last_sid)
+        if self.api.shouldLogin:
+            self.api.login()
         
         #thread_uploader = functools.partial(Thread, daemon=True)
         #self.schedule = PcrClientMaintainSchedule(self, thread_uploader, self.logger)
