@@ -163,7 +163,7 @@ class pcrclient:
 
         packed, crypted_data = self.pack(request, key)
         headers = dict(self.headers)
-        headers['SID'] = headers['SID'] if self.last_sid == "" else self._makemd5(self.last_sid)
+        #headers['SID'] = headers['SID'] if self.last_sid == "" else self._makemd5(self.last_sid)
         headers['PARAM'] = sha1((self.udid + apiurl + b64encode(packed).decode('utf8') + str(self.viewer_id)).encode('utf8')).hexdigest()
         headers['SHORT-UDID'] = pcrclient._encode(self.short_udid)
         return crypted_data, headers
