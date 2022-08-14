@@ -1,4 +1,5 @@
 from collections import defaultdict
+import math
 import os
 from textwrap import indent
 import common.cattrs as cattrs
@@ -73,6 +74,8 @@ class KeyWordController:
         res = self.setting.key_mapping_dict.get(keyword)
         if res is None:
             return
+        if random.random() <= 0.5:
+            res = res[-math.ceil(len(res)*0.3):]
         if use_random:
             return random.choice(res)
         else:
