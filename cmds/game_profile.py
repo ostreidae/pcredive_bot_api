@@ -7,7 +7,7 @@ import discord.utils
 import json
 import os, random
 
-from .api.client import ApiException, PcrClientApi, PcrClientInfo
+from .pcredive_pvp_api.client import ApiException, PcrClientApi, PcrClientInfo
 import datetime
 with open('setting.json', 'r', encoding='utf8') as jfile:
 	jdata = json.load(jfile)

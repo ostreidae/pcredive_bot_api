@@ -100,8 +100,8 @@ class BackendMaintain(Cog_Extension):
         bot.remove_command('help')
         self.lock = threading.Lock()
         self.process = None
-        if enable_subprocess:
-            self.restart_process()
+        #if enable_subprocess:
+            #self.restart_process()
         
     def restart_process(self):
         with self.lock:
