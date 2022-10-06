@@ -96,6 +96,7 @@ class pcrclient:
         self.headers = {}
         self.proxy = proxy
         self.last_sid = last_sid
+        self.login_data = {}
         
 
         header_path = os.path.join(root_dir, 'headers.json')
@@ -235,7 +236,7 @@ class pcrclient:
         with self.login_lock:
             self.callapi('/check/check_agreement', {})
             self.callapi('/check/game_start', {})
-            self.callapi('/load/index', {
+            self.login_data = self.callapi('/load/index', {
                 'carrier': 'Android'
             })
             self.last_login_time = time.time()
@@ -316,8 +317,8 @@ class PcrClientApi:
     def __init__(self, root_dir='', logger=None, configuration_dict:dict=dict(), last_sid=''):
         self.logger = get_logger(logger)
         self.api = get_pcr_client(root_dir, last_sid=last_sid)
-        if self.api.shouldLogin:
-            self.api.login()
+        #if self.api.shouldLogin:
+            #self.api.login()
         
         #thread_uploader = functools.partial(Thread, daemon=True)
         #self.schedule = PcrClientMaintainSchedule(self, thread_uploader, self.logger)
@@ -370,6 +371,8 @@ class PcrClientApi:
             last_state = self._get_from_cache(game_id)
             if last_state is not None:
                 return last_state
+        if self.api.shouldLogin:
+            await self.api.login_async()
         try:
             res = await self.api.callapi('/profile/get_profile', {'target_viewer_id': int(game_id)}, use_async=True)
             ts  = int(time.time()*1e3)
