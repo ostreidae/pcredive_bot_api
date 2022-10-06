@@ -180,9 +180,16 @@ class PcReDiveGameProfile(Cog_Extension):
                 self.api.bind_user_id(dc_id, game_id)
             
         await ctx.send("綁定成功")
+    
+    @commands.command("q")
+    async def _q(self, ctx:Context):
+        await self._query(ctx)
         
     @commands.command()
     async def query(self, ctx:Context):
+        await self._query(ctx)
+        
+    async def _query(self, ctx:Context):
         '''[查詢玩家Id] --- query {遊戲id}'''
         if ctx.message.content.strip() == "":
             await self.query_self(ctx)
