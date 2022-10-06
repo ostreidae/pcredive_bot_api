@@ -78,9 +78,9 @@ if __name__ == "__main__":
     @bot.event
     async def on_ready():
         print(">> Subprocess Bot is online <<")
-    #dir_path         = os.path.dirname(__file__)
+    #dir_path = os.path.dirname(__file__)
     #target_file_path = os.path.join(dir_path, "game_profile.py")
-    thread = init_interactions_py_backgroud_thread()
+    #thread = init_interactions_py_backgroud_thread()
     #thread.join()
     bot.load_extension("pcredive_pvp.cmds.game_profile")
     bot.run(jdata['TOKEN'])
