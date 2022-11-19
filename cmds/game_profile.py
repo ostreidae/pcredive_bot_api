@@ -32,10 +32,14 @@ class Cog_Extension(commands.Cog):
         self.bot = bot
 
 def hour_min_format(total_seconds):
-    hour = total_seconds//3600
+    days = total_seconds//86400
+    hour = (total_seconds%86400)//3600
     minutes = (total_seconds//60) % 60
     seconds = total_seconds % 60
-    return str.format("{}時{}分{}秒", hour,minutes,seconds)
+    if days <= 0:
+        return str.format("{}時{}分{}秒", hour,minutes,seconds)
+    else:
+        return str.format("{}天{}時{}分",days,hour,minutes)
 
 def format_doc(doc:str):
     if type(doc) is not str:
