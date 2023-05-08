@@ -5,7 +5,7 @@
 2. 修改 setting.json ( 修改 TOKEN, Owner_id )
 3. python bot.py
 
-## 取得解包代理
+## 取得 https 解包代理
 1. 夜神模擬器 -> Burp suite 監聽全部介面(*:18000)
 2. 安裝 local CA certificate (export to der public key)
 ```
@@ -15,6 +15,8 @@ openssl x509 -inform der -in cert.der -outform pem -out cert.pem
 # get first line
 openssl x509 -subject_hash_old -in cert.pem
 ```
+3. 將檔案 cert.pem 改名為 `[hash_id].0`, 複製到 /system/etc/security/cacerts, 
+(需要 mount /system 為 r,w 權限)
 
 ## 取得公連帳號登入Token
 可以用 adb root 自行操作或是其他軟體
