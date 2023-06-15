@@ -25,24 +25,21 @@ from .utils import decryptxml
 def get_headers():
     app_ver = get_ver()
     default_headers = {
+        'Accept': '*/*',
         'Accept-Encoding' : 'gzip, deflate',
-        'User-Agent' : 'Dalvik/2.1.0 (Linux; U; Android 5.1.1; SM-G973N Build/PPR1.190810.011)',
+        'User-Agent' : 'UnityPlayer/2021.3.20f1 (UnityWebRequest/1.0, libcurl/7.84.0-DEV)',
         'Content-Type': 'application/octet-stream',
-        'Expect': '100-continue',
-        'X-Unity-Version' : '2018.4.21f1',
-        'APP-VER' : app_ver,
-        'BATTLE-LOGIC-VERSION' : '4',
-        'BUNDLE-VER' : '',
-        'DEVICE' : '2',
-        'DEVICE-ID' : 'b0a17db90748631b981f6a6cb6e3b766',
-        'DEVICE-NAME' : 'samsung SM-G973N',
-        'GRAPHICS-DEVICE-NAME' : 'Adreno (TM) 630',
-        'IP-ADDRESS' : '172.16.7.15',
-        'KEYCHAIN' : '',
-        'LOCALE' : 'Jpn',
-        'PLATFORM-OS-VERSION' : 'Android OS 5.1.1 / API-22 (PPR1.190810.011/500200819)',
-        'REGION-CODE' : '',
-        'RES-VER' : '00070014'
+        'X-Unity-Version' : '2021.3.20f1',
+        'App-Ver' : app_ver,
+        'Battle-Logic-Version' : '4',
+        'Device' : '2',
+        'Device-Id' : '9f494c65477de231602c27e78852ab8e',
+        'Device-Name' : 'samsung SM-G965N',
+        'Graphics-Device-Name' : 'Adreno (TM) 640',
+        'Ip-Address' : '172.16.21.15',
+        'Locale' : 'Jpn',
+        'Platform-Os-Version' : 'Android OS 7.1.2 / API-25 (QP1A.190711.020/700230224)',
+        'Res-Ver' : '00150001'
     }
     return default_headers
 
@@ -90,8 +87,10 @@ class pcrclient:
     
     def __init__(self, udid, short_udid, viewer_id, platform, proxy, root_dir='', last_sid=''):
         
+        self.pid = platform
+        self.pviewer_id = platform + viewer_id
         self.viewer_id = viewer_id
-        self.short_udid = short_udid
+        self.short_udid = "3" + short_udid
         self.udid = udid
         self.headers = {}
         self.proxy = proxy
@@ -106,9 +105,9 @@ class pcrclient:
         for key in defaultHeaders.keys():
             self.headers[key] = defaultHeaders[key]
 
-        self.headers['SID'] = pcrclient._makemd5(viewer_id + udid)
-        self.apiroot = f'https://api{"" if platform == "1" else platform}-pc.so-net.tw'
-        self.headers['platform'] = '1'
+        self.headers['Sid'] = pcrclient._makemd5(self.pviewer_id + udid)
+        self.apiroot = f'https://api{"1" if platform == "1" else "5"}-pc.so-net.tw'
+        self.headers['Platform'] = "2"
 
         self.shouldLogin = last_sid == ''
         self.last_login_time = 0
@@ -160,13 +159,15 @@ class pcrclient:
     def _get_crypted_data_header(self, apiurl:str, request:dict):
         key = pcrclient.createkey()
         if self.viewer_id is not None:
-            request['viewer_id'] = b64encode(self.encrypt(str(self.viewer_id), key))
-
+            request['viewer_id'] = b64encode(self.encrypt(str(self.pviewer_id), key))
+        #dup_req = {'tw_server_id', }
+        request['tw_server_id'] = self.pid
+        
         packed, crypted_data = self.pack(request, key)
         headers = dict(self.headers)
         #headers['SID'] = headers['SID'] if self.last_sid == "" else self._makemd5(self.last_sid)
-        headers['PARAM'] = sha1((self.udid + apiurl + b64encode(packed).decode('utf8') + str(self.viewer_id)).encode('utf8')).hexdigest()
-        headers['SHORT-UDID'] = pcrclient._encode(self.short_udid)
+        headers['Param'] = sha1((self.udid + apiurl + b64encode(packed).decode('utf8') + str(self.pviewer_id)).encode('utf8')).hexdigest()
+        headers['Short-Udid'] = pcrclient._encode(self.short_udid)
         return crypted_data, headers
         
 
@@ -237,7 +238,7 @@ class pcrclient:
             self.callapi('/check/check_agreement', {})
             self.callapi('/check/game_start', {})
             self.login_data = self.callapi('/load/index', {
-                'carrier': 'Android'
+                'carrier': 'samsung',
             })
             self.last_login_time = time.time()
     
@@ -248,7 +249,7 @@ class pcrclient:
             p1 = self.callapi('/check/check_agreement', {}, use_async=True)
             p2 = self.callapi('/check/game_start', {}, use_async=True)
             p3 = self.callapi('/load/index', {
-                'carrier': 'Android'
+                'carrier': 'samsung'
             }, use_async=True)
             await asyncio.gather(p1,p2,p3)
             self.last_login_time = time.time()
