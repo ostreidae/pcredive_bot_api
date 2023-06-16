@@ -90,7 +90,7 @@ class pcrclient:
         self.pid = platform
         self.pviewer_id = platform + viewer_id
         self.viewer_id = viewer_id
-        self.short_udid = "3" + short_udid
+        self.short_udid = platform + short_udid
         self.udid = udid
         self.headers = {}
         self.proxy = proxy
@@ -114,6 +114,8 @@ class pcrclient:
         self.login_lock = threading.Lock()
         self.login_async_lock = None
         self.async_session = None
+        self.timer_lock = threading.Lock()
+        self.last_call_api_time = 0
 
     @staticmethod
     def createkey() -> bytes:
@@ -197,17 +199,28 @@ class pcrclient:
         return self._parse_data(resp.content, url, noerr)
             
     async def _callapi_async(self, apiurl: str, request: dict, noerr: bool = False):
-        crypted, headers = self._get_crypted_data_header(apiurl, request)
-        url     = self.apiroot + apiurl
-        session = self.async_session
-        async with session.post(url, data=crypted, headers=headers) as resp:
-            resp = await resp.read()
-            return self._parse_data(resp, url, noerr)
+        try:
+            async with self.api_lock:
+                crypted, headers = self._get_crypted_data_header(apiurl, request)
+                url     = self.apiroot + apiurl
+                with self.timer_lock:
+                    diff = time.time() - self.last_call_api_time
+                if diff < 1 and diff >=0:
+                    await asyncio.sleep(1-diff)
+                session = self.async_session
+                async with session.post(url, data=crypted, headers=headers) as resp:
+                    resp = await resp.read()
+                    return self._parse_data(resp, url, noerr)
+        finally:
+            with self.timer_lock:
+                self.last_call_api_time = time.time()
+
         
     async def start_async_session(self):
         timeout = aiohttp.ClientTimeout(total=10)
         self.async_session = aiohttp.ClientSession(timeout=timeout)
         self.login_async_lock = asyncio.Lock()
+        self.api_lock = asyncio.Lock()
     
     def _parse_data(self, response_bytes:bytes, apiurl="", noerr: bool = False):
         response = self.unpack(response_bytes)[0]
@@ -220,7 +233,6 @@ class pcrclient:
             self.headers['RES-VER'] = data_headers['required_res_ver']
         if 'sid' in data_headers:
             self.last_sid = data_headers['sid']
-            print(self.last_sid)
 
         data = response['data']
         if not noerr and 'server_error' in data:
