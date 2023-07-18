@@ -156,19 +156,14 @@ class PcReDiveGameProfile(Cog_Extension):
         self.config_dict = config
         self.api = PcrClientApi(configuration_dict=self.config_dict)
     
-    async def query_self(self, ctx:Context):
-        game_id = self.api.binding_id_dict.get(str(ctx.author.id), None)
-        if game_id is None:
-            await ctx.send("此discord帳號尚未綁定遊戲id")
-            return
-        res = await get_info(ctx, self.api, game_id)
-        if res is not None:
-            await ctx.send(embed=generate_embed_result(res))
-            
-
     @commands.command()
     async def me(self, ctx:Context):
         '''[查詢自己的Id] --- me'''
+        await self.query_self(ctx)
+
+    @commands.command("qq me")
+    async def qqme(self, ctx:Context):
+        '''[查詢自己的細節] --- qq me'''
         await self.query_self(ctx)
         
     
@@ -192,16 +187,23 @@ class PcReDiveGameProfile(Cog_Extension):
     
     @commands.command("q")
     async def _q(self, ctx:Context):
+        '''[查詢玩家Id] --- q {遊戲id}'''
         await self._query(ctx)
 
     @commands.command("qq")
-    async def _q(self, ctx:Context):
+    async def _qq(self, ctx:Context):
+        '''[查詢玩家細節] --- qq {遊戲id}'''
         await self._query(ctx, detail=True)
-        
-    @commands.command()
-    async def query(self, ctx:Context):
-        await self._query(ctx)
-        
+    
+    async def query_self(self, ctx:Context):
+        game_id = self.api.binding_id_dict.get(str(ctx.author.id), None)
+        if game_id is None:
+            await ctx.send("此discord帳號尚未綁定遊戲id")
+            return
+        res = await get_info(ctx, self.api, game_id)
+        if res is not None:
+            await ctx.send(embed=generate_embed_result(res))
+
     async def _query(self, ctx:Context, detail:bool=False):
         '''[查詢玩家Id] --- query {遊戲id}'''
         if ctx.message.content.strip() == "":
