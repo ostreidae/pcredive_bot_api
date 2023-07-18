@@ -124,7 +124,7 @@ async def get_info(ctx:Context, api:PcrClientApi, game_id):
         raise err
     return res
 
-def generate_embed_result(res:PcrClientInfo):
+def generate_embed_result(res:PcrClientInfo, detail:bool=False):
     title_text  = f"[玩家] {res.user_name} @{hour_min_format(res.last_login_idle_seconds)}" 
     title_description = f"`遊戲ID: {res.user_id}`"
     embed = discord.Embed(title=title_text, description=title_description, color=0x28ddb0)
@@ -132,6 +132,11 @@ def generate_embed_result(res:PcrClientInfo):
     rank_title = f"戰鬥/公主競技場 [{res.pvp1_group}區, {res.pvp3_group}區]"
     rank_text  = f"`{res.pvp1_rank}名 / {res.pvp3_rank}名`"
     embed.add_field(name=rank_title, value=rank_text, inline=False)
+    if detail:
+        d1_title = f"等級 / 所屬戰隊 / 角色數量 / 全角色戰力"
+        d1_text  = f"`{res.user_level}等 / {res.clan_name} / {res.user_character_count} / {res.user_total_power // 10000}萬`"
+        embed.add_field(name=d1_title, value=d1_text, inline=False)
+        embed.add_field(name="自我簡述", value=f"`{res.user_comment}`", inline=False)
     # embed.add_field(name="分區", value=res.pvp1_group, inline=True)
     # embed.add_field(name = chr(173), value = chr(173))
     # embed.add_field(name="公主競技場排名 (3v3)", value=res.pvp3_rank, inline=True)
@@ -188,12 +193,16 @@ class PcReDiveGameProfile(Cog_Extension):
     @commands.command("q")
     async def _q(self, ctx:Context):
         await self._query(ctx)
+
+    @commands.command("qq")
+    async def _q(self, ctx:Context):
+        await self._query(ctx, detail=True)
         
     @commands.command()
     async def query(self, ctx:Context):
         await self._query(ctx)
         
-    async def _query(self, ctx:Context):
+    async def _query(self, ctx:Context, detail:bool=False):
         '''[查詢玩家Id] --- query {遊戲id}'''
         if ctx.message.content.strip() == "":
             await self.query_self(ctx)
@@ -205,7 +214,7 @@ class PcReDiveGameProfile(Cog_Extension):
         
         res = await get_info(ctx, self.api, game_id)
         if res is not None:
-            await ctx.send(embed=generate_embed_result(res))
+            await ctx.send(embed=generate_embed_result(res, detail))
         
 def setup(bot):
     bot.add_cog(PcReDiveGameProfile(bot))

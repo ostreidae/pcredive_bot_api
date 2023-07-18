@@ -4,6 +4,7 @@ setting.json
 original_cmds/
 __pycache__
 .vscode/
+leagcy_py310/
 
 shared_prefs/
 headers.json

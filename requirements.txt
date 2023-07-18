@@ -1,7 +1,8 @@
 pycryptodome
 beautifulsoup4
 attrs
-discord.py
+cattrs
+discord.py==1.7.3
 psutil
 requests
 msgpack

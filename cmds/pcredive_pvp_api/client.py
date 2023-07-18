@@ -299,6 +299,13 @@ class PcrClientInfo:
     
     pvp3_rank : int = attr.ib(default=15001)
     pvp3_group : int = attr.ib(default=0)
+
+    clan_name : str = attr.ib(default="")
+    clan_score : int = attr.ib(default=0)
+    user_comment : str = attr.ib(default="")
+    user_level : str = attr.ib(default="")
+    user_total_power : int = attr.ib(default=0)
+    user_character_count : int = attr.ib(default=0)
     
     last_login_time : int = attr.ib(default=0)
     last_login_idle_seconds : int = attr.ib(default=0)
@@ -315,7 +322,7 @@ class PcrClientInfo:
         
         last_login_time = data_dict["user_info"]["last_login_time"]
         last_login_idle_seconds = int(time.time()) - last_login_time
-        
+
         return PcrClientInfo(user_id=user_id,
                              user_name=user_name, 
                              pvp1_rank=pvp1_rank, 
@@ -323,7 +330,13 @@ class PcrClientInfo:
                              pvp3_rank=pvp3_rank,
                              pvp3_group=pvp3_group,
                              last_login_time=last_login_time, 
-                             last_login_idle_seconds=last_login_idle_seconds)
+                             last_login_idle_seconds=last_login_idle_seconds,
+                             clan_name=data_dict["clan_name"],
+                             clan_score=data_dict["clan_battle_own_score"],
+                             user_comment=data_dict["user_info"]["user_comment"],
+                             user_level=data_dict["user_info"]["team_level"],
+                             user_total_power=data_dict["user_info"]["total_power"],
+                             user_character_count=data_dict["user_info"]["unit_num"])
         
     
 class PcrClientApi:
@@ -386,6 +399,7 @@ class PcrClientApi:
                 return last_state
         if self.api.shouldLogin:
             await self.api.login_async()
+            self.api.shouldLogin = False
         try:
             res = await self.api.callapi('/profile/get_profile', {'target_viewer_id': int(game_id)}, use_async=True)
             ts  = int(time.time()*1e3)
