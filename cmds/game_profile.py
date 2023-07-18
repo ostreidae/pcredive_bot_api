@@ -161,10 +161,10 @@ class PcReDiveGameProfile(Cog_Extension):
         '''[查詢自己的Id] --- me'''
         await self.query_self(ctx)
 
-    @commands.command("qq me")
+    @commands.command("qqme")
     async def qqme(self, ctx:Context):
         '''[查詢自己的細節] --- qq me'''
-        await self.query_self(ctx)
+        await self.query_self(ctx, detail=True)
         
     
     @commands.command()
@@ -195,14 +195,14 @@ class PcReDiveGameProfile(Cog_Extension):
         '''[查詢玩家細節] --- qq {遊戲id}'''
         await self._query(ctx, detail=True)
     
-    async def query_self(self, ctx:Context):
+    async def query_self(self, ctx:Context, detail:bool=False):
         game_id = self.api.binding_id_dict.get(str(ctx.author.id), None)
         if game_id is None:
             await ctx.send("此discord帳號尚未綁定遊戲id")
             return
         res = await get_info(ctx, self.api, game_id)
         if res is not None:
-            await ctx.send(embed=generate_embed_result(res))
+            await ctx.send(embed=generate_embed_result(res, detail))
 
     async def _query(self, ctx:Context, detail:bool=False):
         '''[查詢玩家Id] --- query {遊戲id}'''
