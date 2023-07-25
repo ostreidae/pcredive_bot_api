@@ -114,7 +114,12 @@ async def get_info(ctx:Context, api:PcrClientApi, game_id):
     try:
         res = await api.query_target_user_game_id_async(game_id)
     except ApiException as api_exception:
-        if api_exception.code is None or api_exception.code != "214":
+        if api_exception.code is None:
+            await ctx.send(str.format("code={} data={}", api_exception.code, api_exception.message))
+            return
+        if type(api_exception.code) is str and \
+           len(api_exception.code) >= 1 and \
+           api_exception.code[0] != "2":
             await ctx.send(str.format("code={} data={}", api_exception.code, api_exception.message))
             return
         await ctx.send("伺服器需要重新登入, 開始重新登入")
@@ -193,6 +198,11 @@ class PcReDiveGameProfile(Cog_Extension):
     @commands.command("qq")
     async def _qq(self, ctx:Context):
         '''[查詢玩家細節] --- qq {遊戲id}'''
+        arr = ctx.message.content.split(" ")
+        arr = [c for c in arr if len(c)>=1]
+        if len(arr) >= 2 and arr[1] == "me":
+            await self.query_self(ctx, detail=True)
+            return
         await self._query(ctx, detail=True)
     
     async def query_self(self, ctx:Context, detail:bool=False):
